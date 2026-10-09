@@ -1,0 +1,250 @@
+{
+  "execution": "local",
+  "project": "agentscope-accept-b472f1696e32",
+  "checks": [
+    {
+      "name": "api_sdk_tests",
+      "status": "passed",
+      "seconds": 3.43,
+      "measurements": ""
+    },
+    {
+      "name": "ruff",
+      "status": "passed",
+      "seconds": 0.02,
+      "measurements": ""
+    },
+    {
+      "name": "mypy",
+      "status": "passed",
+      "seconds": 0.37,
+      "measurements": ""
+    },
+    {
+      "name": "web_typecheck",
+      "status": "passed",
+      "seconds": 0.67,
+      "measurements": ""
+    },
+    {
+      "name": "web_unit_tests",
+      "status": "passed",
+      "seconds": 0.82,
+      "measurements": ""
+    },
+    {
+      "name": "native_web_locked_install",
+      "status": "passed",
+      "seconds": 10.26,
+      "measurements": ""
+    },
+    {
+      "name": "native_production_build",
+      "status": "passed",
+      "seconds": 12.71,
+      "measurements": ""
+    },
+    {
+      "name": "compose_validation",
+      "status": "passed",
+      "seconds": 0.07,
+      "measurements": ""
+    },
+    {
+      "name": "container_builds",
+      "status": "passed",
+      "seconds": 1.47,
+      "measurements": ""
+    },
+    {
+      "name": "missing_configuration",
+      "status": "passed",
+      "seconds": 8.4,
+      "measurements": {
+        "missing_configuration_exits": {
+          "api": 1,
+          "web": 1
+        }
+      }
+    },
+    {
+      "name": "first_start",
+      "status": "passed",
+      "seconds": 23.01,
+      "measurements": null
+    },
+    {
+      "name": "security_readiness_migrations_empty_database",
+      "status": "passed",
+      "seconds": 0.53,
+      "measurements": {
+        "api": {
+          "user": "10001:10001",
+          "memory_bytes": 536870912,
+          "cpu": 1.0,
+          "pids": 128,
+          "image": "sha256:ab3c0a511dd419e2331d44ea18910850cab1b5ac7b94f69c15c08a790f803c1c"
+        },
+        "web": {
+          "user": "10001:10001",
+          "memory_bytes": 402653184,
+          "cpu": 1.0,
+          "pids": 128,
+          "image": "sha256:e1f9bf11b1137b607480f3f734d14d8b155f9c7f230ff0cb74742680b8ff629e"
+        },
+        "postgres": {
+          "user": "postgres",
+          "memory_bytes": 536870912,
+          "cpu": 1.0,
+          "pids": 128,
+          "image": "sha256:79bd7c99e923138f136f8009d6bffa66e21e9d4fda5c0c561b00fc9c90cfe537"
+        }
+      }
+    },
+    {
+      "name": "dependency_failure_no_fallback_and_bounded_sdk",
+      "status": "passed",
+      "seconds": 22.56,
+      "measurements": {
+        "api_status": 503,
+        "dashboard_status": 503,
+        "silent_demo_runs": 0,
+        "offline_sdk": {
+          "exported_events": 0,
+          "dropped_events": 20,
+          "export_failures": 6
+        }
+      }
+    },
+    {
+      "name": "real_sdk_ingestion_retry_dedup_metrics",
+      "status": "passed",
+      "seconds": 0.14,
+      "measurements": {
+        "result": 29,
+        "runs": 1,
+        "spans": 3,
+        "tokens": 0,
+        "cost": null,
+        "synthetic": false,
+        "sdk": {
+          "exported_events": 4,
+          "dropped_events": 0,
+          "export_failures": 1
+        },
+        "replayed_events_accepted": 0
+      }
+    },
+    {
+      "name": "browser_workflow_and_restart_persistence",
+      "status": "passed",
+      "seconds": 69.24,
+      "measurements": {
+        "status": "passed",
+        "restart": {
+          "shutdown": {
+            "seconds": 13.94,
+            "exit_codes": {
+              "api": 143,
+              "postgres": 0,
+              "web": 143
+            }
+          },
+          "volume": "agentscope-accept-b472f1696e32_postgres-data",
+          "records": {
+            "projects": 3,
+            "agents": 5,
+            "runs": 27,
+            "spans": 111,
+            "telemetry_events": 112,
+            "anomalies": 1,
+            "incidents": 1,
+            "investigations": 1,
+            "remediations": 1,
+            "settings": 1,
+            "audit_log": 11,
+            "api_keys": 2
+          },
+          "all_record_checksums_match": true
+        }
+      }
+    },
+    {
+      "name": "secrets_absent_from_logs_and_image_metadata",
+      "status": "passed",
+      "seconds": 7.12,
+      "measurements": {
+        "credential_values_found": 0,
+        "native_state_in_images": false,
+        "build_ca_in_images": false
+      }
+    },
+    {
+      "name": "final_audit_and_key_revocation",
+      "status": "passed",
+      "seconds": 3.46,
+      "measurements": {
+        "projects": 3,
+        "agents": 5,
+        "runs": 27,
+        "spans": 111,
+        "telemetry_events": 112,
+        "anomalies": 1,
+        "incidents": 1,
+        "investigations": 1,
+        "remediations": 1,
+        "settings": 1,
+        "audit_log": 12,
+        "api_keys": 2
+      }
+    },
+    {
+      "name": "final_graceful_shutdown",
+      "status": "passed",
+      "seconds": 0.98,
+      "measurements": {
+        "seconds": 0.86,
+        "exit_codes": {
+          "api": 143,
+          "postgres": 0,
+          "web": 143
+        }
+      }
+    }
+  ],
+  "status": "passed",
+  "volume_retained": "agentscope-accept-b472f1696e32_postgres-data",
+  "branch": "feat/local-container-acceptance",
+  "commit_at_start": "a342698e19dbc5a8735fd0ff638f0590d1987208",
+  "additional_startup_dependency_check": {
+    "execution": "local",
+    "exit_code": 1,
+    "diagnostic_class": "OperationalError",
+    "credential_values_found": 0,
+    "sqlite_fallback": false
+  },
+  "browser_reconnection": {
+    "before": {
+      "opens": 1,
+      "errors": 0,
+      "refreshes": 1
+    },
+    "after": {
+      "opens": 2,
+      "errors": 6,
+      "refreshes": 3
+    },
+    "replayAccepted": 0,
+    "duplicateActions": 0
+  },
+  "native_preservation": {
+    "every_row_checksum_matches": true,
+    "admin_token_checksum_matches": true,
+    "runs": 130,
+    "spans": 541,
+    "events": 542,
+    "investigations": 4,
+    "settings": 4,
+    "audits": 45
+  }
+}
