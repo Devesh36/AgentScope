@@ -17,12 +17,13 @@
     "uv_tool_local": "passed",
     "executables": [
       "agentscope",
-      "agenscope",
       "Agenscope"
     ],
     "requested_alias": "Agenscope Repl",
     "homebrew_launcher_without_site_packages": "passed",
-    "homebrew_install": "not run: Homebrew and Ruby are unavailable in this Linux environment"
+    "homebrew_install": "not run: Homebrew and Ruby are unavailable in this Linux environment",
+    "uv_tool_git_source": "passed",
+    "case_insensitive_executable_names": "distinct; passed"
   },
   "container": {
     "compose_validation": "passed",
@@ -113,5 +114,6 @@
   },
   "hosted_ci": "not observed; local results only",
   "data_preserved": true,
-  "services_stopped": true
+  "services_stopped": true,
+  "distribution_source_commit": "2504ce87caa2bbd014aa3ab9ee35b0caedc374cf"
 }

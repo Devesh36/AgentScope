@@ -6,8 +6,12 @@ Local checks on 2026-10-09 validated source commit
 
 - 22 API/SDK/integration tests, 11 CLI tests and 3 web unit tests passed.
   Ruff, mypy, TypeScript and the Next.js production build passed.
-- `uv tool install .` installed all three command aliases. `Agenscope Repl`
-  provided offline help and connected again after the stack restarted.
+- `uv tool install .` installed both commands. `Agenscope Repl`
+  provided offline help and connected again after the stack restarted. Installation
+  from the pushed Git source also passed. Distribution metadata commit
+  `2504ce87caa2bbd014aa3ab9ee35b0caedc374cf` removes the redundant lowercase
+  misspelling to avoid alias collisions on case-insensitive filesystems; local
+  installation of the two distinct executable names passed again.
 - The changed web container built. The unchanged API application reused its
   already validated image. A separate PostgreSQL volume started empty, migrated,
   and passed readiness checks. Both application containers ran as UID 10001 with

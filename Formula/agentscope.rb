@@ -3,7 +3,7 @@ class Agentscope < Formula
   homepage "https://github.com/Devesh36/AgentScope"
   url "https://github.com/Devesh36/AgentScope.git",
       using: :git,
-      revision: "ed613783861967ca3b5003d170cf0bb3172acf8a"
+      revision: "2504ce87caa2bbd014aa3ab9ee35b0caedc374cf"
   version "0.2.0"
 
   depends_on "python@3.12"
@@ -21,7 +21,6 @@ class Agentscope < Formula
       sys.exit(main())
     PYTHON
     (bin/"agentscope").chmod 0755
-    bin.install_symlink bin/"agentscope" => "agenscope"
     bin.install_symlink bin/"agentscope" => "Agenscope"
   end
 
