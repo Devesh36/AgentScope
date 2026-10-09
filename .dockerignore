@@ -8,3 +8,11 @@
 **/test-results
 **/*.tsbuildinfo
 .env
+**/*.env
+**/.env*
+**/*.pem
+**/*.key
+**/.mypy_cache
+**/.ruff_cache
+**/playwright-report
+**/.next-*

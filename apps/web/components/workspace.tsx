@@ -158,16 +158,39 @@ function Shell({ children }: { children: React.ReactNode }) {
   }, [projects, project]);
   useEffect(() => {
     if (!project) return;
-    const events = new EventSource(
-      `/api/v1/events?project_id=${encodeURIComponent(project)}`,
-    );
-    events.onopen = () => setConnected(true);
-    events.onerror = () => setConnected(false);
-    events.addEventListener("refresh", () => {
-      setConnected(true);
-      client.invalidateQueries({ predicate: (q) => q.queryKey[0] === project });
-    });
+    let events: EventSource;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    let delay = 1000;
+    let active = true;
+    const refresh = () => client.invalidateQueries({ predicate: (q) => q.queryKey[0] === project });
+    const connect = () => {
+      if (!active) return;
+      events = new EventSource(`/api/v1/events?project_id=${encodeURIComponent(project)}`);
+      events.onopen = () => {
+        if (!active) return;
+        delay = 1000;
+        setConnected(true);
+        refresh();
+      };
+      events.onerror = () => {
+        if (!active) return;
+        setConnected(false);
+        // Some HTTP failures permanently close EventSource. Recreate it with
+        // bounded backoff; each successful reconnect reads the persisted state.
+        events.close();
+        retry = setTimeout(connect, delay);
+        delay = Math.min(delay * 2, 10000);
+      };
+      events.addEventListener("refresh", () => {
+        if (!active) return;
+        setConnected(true);
+        refresh();
+      });
+    };
+    connect();
     return () => {
+      active = false;
+      if (retry) clearTimeout(retry);
       events.close();
       setConnected(false);
     };

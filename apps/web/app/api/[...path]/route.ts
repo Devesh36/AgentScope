@@ -3,6 +3,11 @@ import { resolve } from "node:path";
 import { NextRequest } from "next/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Next waits for streamed requests before exiting. Cancel their upstream fetches
+// on SIGTERM so a dashboard EventSource cannot hold the process open forever.
+const shutdown = new AbortController();
+process.once("SIGTERM", () => shutdown.abort());
+process.once("SIGINT", () => shutdown.abort());
 async function forward(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
@@ -42,10 +47,27 @@ async function forward(
           ? undefined
           : await request.arrayBuffer(),
         cache: "no-store",
-        signal: request.signal,
+        signal: AbortSignal.any([request.signal, shutdown.signal]),
       },
     );
-    return new Response(upstream.body, {
+    let body = upstream.body;
+    if (body && upstream.headers.get("content-type")?.includes("event-stream")) {
+      const reader = body.getReader();
+      body = new ReadableStream({
+        async pull(controller) {
+          try {
+            const result = await reader.read();
+            if (result.done) controller.close();
+            else controller.enqueue(result.value);
+          } catch {
+            // The stream is over; EventSource will reconnect and refresh its data.
+            controller.close();
+          }
+        },
+        cancel() { return reader.cancel(); },
+      });
+    }
+    return new Response(body, {
       status: upstream.status,
       headers: {
         "Content-Type":

@@ -7,7 +7,7 @@ test.beforeAll(async ({ request }) => {
   const token =
     process.env.AGENTSCOPE_ADMIN_TOKEN ||
     (
-      await readFile(resolve(process.cwd(), "../../.local/admin-token"), "utf8")
+      await readFile(process.env.AGENTSCOPE_ADMIN_TOKEN_FILE || resolve(process.cwd(), "../../.local/admin-token"), "utf8")
     ).trim();
   const response = await request.post(`${apiUrl}/api/v1/projects`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -121,7 +121,7 @@ test("complete observability, investigation, approval, and recovery workflow", a
   ).toBeVisible();
   await expect(page.locator(".chart-box svg").first()).toBeVisible();
   await page.screenshot({
-    path: "../../.local/overview-desktop.png",
+    path: resolve(process.env.PLAYWRIGHT_SCREENSHOT_DIR || "../../.local", "overview-desktop.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -134,7 +134,7 @@ test("complete observability, investigation, approval, and recovery workflow", a
     ),
   ).toBeTruthy();
   await page.screenshot({
-    path: "../../.local/overview-mobile.png",
+    path: resolve(process.env.PLAYWRIGHT_SCREENSHOT_DIR || "../../.local", "overview-mobile.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Toggle navigation" }).click();
@@ -154,7 +154,7 @@ test("settings keys are shown once and can be revoked", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Save your API key" }),
   ).toBeVisible();
-  await expect(page.locator(".secret-reveal code")).toHaveText(/^as_/);
+  expect(await page.locator(".secret-reveal code").evaluate((node) => node.textContent?.startsWith("as_"))).toBe(true);
   await page.getByRole("button", { name: "I saved the key" }).click();
   await expect(page.locator(".secret-reveal")).toHaveCount(0);
   await page

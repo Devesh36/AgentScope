@@ -108,4 +108,10 @@ This release implements the requested dashboard and REST API with a functional l
 
 ## Optional Docker stack
 
-`docker-compose.yml` builds the web/API containers and runs PostgreSQL. Export a strong URL-safe `POSTGRES_PASSWORD` securely, then run `docker compose up --build`. Published ports bind to loopback; add an authenticated HTTPS ingress before remote access. Set `DASHBOARD_PASSWORD` for dashboard authentication. No credential is embedded in the repository. The compose stack uses the same durable local outbox; Redis dispatch is not included in this release.
+The local Compose stack uses digest-pinned PostgreSQL, non-root API/web containers, file-mounted secrets, read-only application filesystems, readiness checks, and CPU/memory/process limits. Only loopback ports are published. It uses the existing durable outbox and deterministic investigator; no Redis or external LLM is required.
+
+```bash
+npm run accept:containers
+```
+
+This command creates its own disposable project and database, builds both images, runs native checks and real SDK ingestion, exercises the browser workflow, restarts without deleting the database, and stops its services after success. It retains its database volume and a sanitized report under ignored `.local/container-acceptance/`. It never replaces native SQLite data or prunes Docker resources. See [exact prerequisites, manual startup, restart and troubleshooting commands](docs/local-containers.md).

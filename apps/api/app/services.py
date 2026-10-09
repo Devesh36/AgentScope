@@ -217,7 +217,11 @@ def investigation_step(phase, progress):
     def step(state):
         with Session() as db:
             inv = db.get(Investigation, state["investigation_id"])
-            if not inv or inv.status == "cancelled":
+            if (
+                not inv
+                or inv.status in ("cancelled", "complete")
+                or inv.progress >= progress
+            ):
                 return state
             incident = db.get(Incident, inv.incident_id)
             anomaly = db.get(Anomaly, incident.anomaly_id)

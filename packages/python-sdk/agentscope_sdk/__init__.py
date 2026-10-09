@@ -5,8 +5,10 @@ import functools
 import hashlib
 import inspect
 import json
+import math
 import queue
 import threading
+import time
 import urllib.error
 import urllib.request
 from contextlib import contextmanager
@@ -32,6 +34,20 @@ class AgentScope:
         queue_size=1000,
         batch_size=50,
     ):
+        if (
+            not isinstance(queue_size, int)
+            or isinstance(queue_size, bool)
+            or queue_size < 1
+        ):
+            raise ValueError("queue_size must be a positive integer")
+        if (
+            not isinstance(batch_size, int)
+            or isinstance(batch_size, bool)
+            or not 1 <= batch_size <= 1000
+        ):
+            raise ValueError("batch_size must be between 1 and 1000")
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("timeout must be positive and finite")
         self.endpoint, self.api_key, self.agent_name = (
             endpoint.rstrip("/"),
             api_key,
@@ -41,6 +57,9 @@ class AgentScope:
         self.timeout, self.batch_size = timeout, batch_size
         self._queue = queue.Queue(maxsize=queue_size)
         self._stop = threading.Event()
+        self._abort = threading.Event()
+        self._lock = threading.Lock()
+        self._deadline = None
         self.stats = {"exported_events": 0, "dropped_events": 0, "export_failures": 0}
         self._thread = threading.Thread(
             target=self._export, daemon=True, name="agentscope-exporter"
@@ -56,18 +75,44 @@ class AgentScope:
                 "Authorization": f"Bearer {self.api_key}",
             },
         )
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+        remaining = (
+            self.timeout
+            if self._deadline is None
+            else min(self.timeout, self._deadline - time.monotonic())
+        )
+        if remaining <= 0 or self._abort.is_set():
+            raise OSError("Exporter shutdown deadline reached")
+        with urllib.request.urlopen(request, timeout=remaining) as response:
             return json.load(response)
 
     def _enqueue(self, event):
-        try:
-            self._queue.put_nowait(event)
-        except queue.Full:
-            self.stats["dropped_events"] += 1
+        with self._lock:
+            if self._stop.is_set():
+                self.stats["dropped_events"] += 1
+                return
+            try:
+                self._queue.put_nowait(event)
+            except queue.Full:
+                self.stats["dropped_events"] += 1
+
+    def _discard(self):
+        with self._lock:
+            while True:
+                try:
+                    self._queue.get_nowait()
+                    self._queue.task_done()
+                    self.stats["dropped_events"] += 1
+                except queue.Empty:
+                    break
 
     def _export(self):
         agent_id = None
         while not self._stop.is_set() or not self._queue.empty():
+            if self._abort.is_set() or (
+                self._deadline is not None and time.monotonic() >= self._deadline
+            ):
+                self._discard()
+                return
             try:
                 batch = [self._queue.get(timeout=0.2)]
             except queue.Empty:
@@ -78,6 +123,12 @@ class AgentScope:
                 except queue.Empty:
                     break
             for attempt in range(3):
+                if self._abort.is_set() or (
+                    self._deadline is not None and time.monotonic() >= self._deadline
+                ):
+                    with self._lock:
+                        self.stats["dropped_events"] += len(batch)
+                    break
                 try:
                     if not agent_id:
                         agent_id = self._request(
@@ -96,7 +147,8 @@ class AgentScope:
                 except (OSError, ValueError, KeyError):
                     self.stats["export_failures"] += 1
                     if attempt == 2:
-                        self.stats["dropped_events"] += len(batch)
+                        with self._lock:
+                            self.stats["dropped_events"] += len(batch)
                     else:
                         self._stop.wait(0.2 * (2**attempt))
             for _ in batch:
@@ -218,8 +270,24 @@ class AgentScope:
             pass
 
     def close(self, timeout=10):
-        self._stop.set()
+        """Drain until the deadline; return whether the exporter has terminated.
+
+        An already active request retains the configured socket timeout.
+        After a close deadline no new request starts and queued events are counted
+        as dropped. Call close again to wait for an in-flight request if needed.
+        """
+        if not math.isfinite(timeout) or timeout < 0:
+            raise ValueError("close timeout must be nonnegative and finite")
+        with self._lock:
+            if self._deadline is None:
+                self._deadline = time.monotonic() + timeout
+            self._stop.set()
         self._thread.join(timeout)
+        if self._thread.is_alive():
+            self._abort.set()
+            self._discard()
+            return False
+        return True
 
     def __enter__(self):
         return self

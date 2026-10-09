@@ -18,10 +18,11 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 )
 from pydantic import ValidationError
 from sqlalchemy import func, select, text, update
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session as DBSession
 from starlette.responses import StreamingResponse
 
+from .config import secret_file
 from .db import (
     LOCAL,
     Agent,
@@ -36,6 +37,7 @@ from .db import (
     Session,
     Settings,
     Span,
+    engine,
     now,
     uid,
 )
@@ -60,7 +62,9 @@ from .telemetry import PRICING_VERSION, aware, ingest, otlp_events
 
 logger = logging.getLogger("agentscope")
 TOKEN_FILE = LOCAL / "admin-token"
-if os.getenv("AGENTSCOPE_ADMIN_TOKEN"):
+if os.getenv("AGENTSCOPE_CONTAINER") == "1" or os.getenv("AGENTSCOPE_ADMIN_TOKEN_FILE"):
+    ADMIN_TOKEN = secret_file("AGENTSCOPE_ADMIN_TOKEN_FILE")
+elif os.getenv("AGENTSCOPE_ADMIN_TOKEN"):
     ADMIN_TOKEN = os.environ["AGENTSCOPE_ADMIN_TOKEN"]
 else:
     if not TOKEN_FILE.exists():
@@ -69,8 +73,8 @@ else:
     ADMIN_TOKEN = TOKEN_FILE.read_text().strip()
 
 
-async def worker():
-    while True:
+async def worker(stop):
+    while not stop.is_set():
         try:
             await asyncio.to_thread(process_outbox)
             with Session() as db:
@@ -82,10 +86,19 @@ async def worker():
                     )
                 )
             for inv_id in unfinished:
+                if stop.is_set():
+                    break
                 await asyncio.to_thread(investigate, inv_id)
-        except Exception:
-            logger.exception("Background worker failed; persisted work will be retried")
-        await asyncio.sleep(2)
+        except Exception as exc:  # noqa: BLE001 — retry persisted work without logging secrets
+            # Database/HTTP exceptions can include credentials or telemetry payloads.
+            logger.error(
+                "Background worker failed (%s); persisted work will be retried",
+                type(exc).__name__,
+            )
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=2)
+        except TimeoutError:
+            pass
 
 
 @asynccontextmanager
@@ -100,13 +113,18 @@ async def lifespan(_app):
                 )
             )
             db.commit()
-    task = asyncio.create_task(worker())
-    yield
-    task.cancel()
+    stop = asyncio.Event()
+    task = asyncio.create_task(worker(stop))
+    _app.state.stop = stop
+    _app.state.draining = False
+    _app.state.worker = task
     try:
+        yield
+    finally:
+        # Finish the current synchronous transaction before disposing connections.
+        stop.set()
         await task
-    except asyncio.CancelledError:
-        pass
+        engine.dispose()
 
 
 app = FastAPI(title="AgentScope API", version="1.0.0", lifespan=lifespan)
@@ -306,8 +324,20 @@ def live():
 
 
 @app.get("/health/ready")
-def ready(db: DB):
-    db.execute(text("SELECT 1 FROM projects LIMIT 1"))
+def ready(request: Request, db: DB):
+    try:
+        db.execute(text("SELECT 1 FROM projects LIMIT 1"))
+        if (
+            os.getenv("AGENTSCOPE_CONTAINER") == "1"
+            and db.scalar(text("SELECT version_num FROM alembic_version")) != "001"
+        ):
+            raise RuntimeError("Migrations not current")
+        if request.app.state.worker.done():
+            raise RuntimeError("Worker stopped")
+    except (SQLAlchemyError, RuntimeError):
+        raise HTTPException(
+            503, "Database, migrations, or background worker unavailable"
+        ) from None
     return {
         "status": "ready",
         "storage": db.get_bind().dialect.name,
@@ -562,7 +592,7 @@ def start_investigation(incident_id: str, db: DB, project_id: Scope, _: Admin):
     if inv and inv.status != "failed":
         return serialize(inv)
     if inv:
-        inv.status, inv.timeline = "queued", []
+        inv.status, inv.timeline, inv.progress, inv.report = "queued", [], 0, {}
     else:
         inv = Investigation(id=uid(), project_id=project_id, incident_id=incident_id)
         db.add(inv)
@@ -858,9 +888,14 @@ def overview(
 @app.get("/api/v1/events")
 async def event_stream(request: Request, project_id: Scope):
     async def stream():
-        while not await request.is_disconnected():
+        # A bounded stream also lets an ASGI server drain clients on shutdown.
+        # EventSource reconnects automatically and immediately refreshes data.
+        deadline = asyncio.get_running_loop().time() + 60
+        while not await request.is_disconnected() and not request.app.state.draining:
             yield f"event: refresh\ndata: {json.dumps({'project_id': project_id, 'at': now().isoformat()})}\n\n"
             await asyncio.sleep(3)
+            if asyncio.get_running_loop().time() >= deadline:
+                break
 
     return StreamingResponse(
         stream(),

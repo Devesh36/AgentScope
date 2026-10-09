@@ -1,50 +1,101 @@
+name: ${COMPOSE_PROJECT_NAME:?Use scripts/container_acceptance.py init to create a private stack configuration}
+x-app: &app
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  stop_grace_period: 30s
+  tmpfs:
+    - /tmp:rw,nosuid,noexec,size=64m,uid=10001,gid=10001
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    user: postgres
     environment:
       POSTGRES_DB: agentscope
       POSTGRES_USER: agentscope
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD securely}
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets: [database_password]
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: [CMD-SHELL, pg_isready -U agentscope -d agentscope]
+      test: [CMD-SHELL, "pg_isready -U agentscope -d agentscope && psql -U agentscope -d agentscope -tAc 'SELECT 1' | grep -qx 1"]
       interval: 3s
       timeout: 3s
       retries: 20
+      start_period: 10s
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    shm_size: 128m
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 30s
   api:
+    <<: *app
+    image: ${COMPOSE_PROJECT_NAME}-api:local
     build:
       context: .
       dockerfile: infrastructure/docker/api.Dockerfile
+      secrets: [proxy_ca]
     environment:
-      DATABASE_URL: postgresql+psycopg://agentscope:${POSTGRES_PASSWORD}@postgres:5432/agentscope
-    volumes:
-      - local-state:/app/.local
+      AGENTSCOPE_CONTAINER: '1'
+      AGENTSCOPE_DATA_DIR: /tmp/agentscope
+      AGENTSCOPE_ADMIN_TOKEN_FILE: /run/secrets/admin_token
+      DATABASE_HOST: postgres
+      DATABASE_NAME: agentscope
+      DATABASE_USER: agentscope
+      DATABASE_PASSWORD_FILE: /run/secrets/database_password
+    secrets: [admin_token, database_password]
     ports:
-      - 127.0.0.1:8000:8000
+      - 127.0.0.1:${AGENTSCOPE_API_PORT:?Set an unused local API port}:8000
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      test: [CMD, python, /app/infrastructure/docker/api_health.py]
       interval: 3s
-      timeout: 3s
+      timeout: 7s
       retries: 20
+      start_period: 15s
+    mem_limit: 512m
+    cpus: 1.0
   web:
+    <<: *app
+    image: ${COMPOSE_PROJECT_NAME}-web:local
     build:
       context: .
       dockerfile: infrastructure/docker/web.Dockerfile
+      secrets: [proxy_ca]
     environment:
       API_URL: http://api:8000
-      AGENTSCOPE_TOKEN_FILE: /runtime/admin-token
-      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
-    volumes:
-      - local-state:/runtime:ro
+      AGENTSCOPE_CONTAINER: '1'
+      AGENTSCOPE_TOKEN_FILE: /run/secrets/admin_token
+      DASHBOARD_PASSWORD_FILE: /run/secrets/dashboard_password
+    secrets: [admin_token, dashboard_password]
     ports:
-      - 127.0.0.1:3000:3000
+      - 127.0.0.1:${AGENTSCOPE_WEB_PORT:?Set an unused local dashboard port}:3000
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: [CMD, node, /app/web_health.mjs]
+      interval: 3s
+      timeout: 7s
+      retries: 20
+      start_period: 10s
+    mem_limit: 384m
+    cpus: 1.0
 volumes:
   postgres-data:
-  local-state:
+secrets:
+  database_password:
+    file: ${AGENTSCOPE_SECRET_DIR:?Private stack secret directory}/database-password
+  admin_token:
+    file: ${AGENTSCOPE_SECRET_DIR}/admin-token
+  dashboard_password:
+    file: ${AGENTSCOPE_SECRET_DIR}/dashboard-password
+  # Build-only trust, never included in an image or mounted at runtime.
+  proxy_ca:
+    file: ${AGENTSCOPE_BUILD_CA:?Path to a trusted PEM CA bundle}

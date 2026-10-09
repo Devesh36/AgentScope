@@ -20,18 +20,19 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
+from .config import database_url
+
 ROOT = Path(__file__).resolve().parents[3]
-LOCAL = ROOT / ".local"
-LOCAL.mkdir(exist_ok=True)
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{LOCAL / 'agentscope.db'}")
+LOCAL = Path(os.getenv("AGENTSCOPE_DATA_DIR", str(ROOT / ".local")))
+LOCAL.mkdir(parents=True, exist_ok=True)
+DATABASE_URL = database_url(LOCAL)
+IS_SQLITE = str(DATABASE_URL).startswith("sqlite")
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
-    if DATABASE_URL.startswith("sqlite")
-    else {},
+    connect_args={"check_same_thread": False} if IS_SQLITE else {"connect_timeout": 5},
     pool_pre_ping=True,
 )
-if DATABASE_URL.startswith("sqlite"):
+if IS_SQLITE:
 
     @event.listens_for(engine, "connect")
     def sqlite_settings(connection, _):
