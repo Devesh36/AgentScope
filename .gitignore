@@ -14,3 +14,5 @@ test-results/
 playwright-report/
 *.tsbuildinfo
 coverage/
+/build/
+/dist/

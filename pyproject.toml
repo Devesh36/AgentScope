@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentscope-cli"
+version = "0.2.0"
+description = "AgentScope interactive observability and synthetic incident demo client"
+readme = "packages/cli/README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+agentscope = "agentscope_cli.repl:main"
+agenscope = "agentscope_cli.repl:main"
+Agenscope = "agentscope_cli.repl:main"
+
+[project.urls]
+Repository = "https://github.com/Devesh36/AgentScope"
+
+[tool.setuptools]
+package-dir = {"" = "packages/cli"}
+
+[tool.setuptools.packages.find]
+where = ["packages/cli"]
+include = ["agentscope_cli*"]
+
+# Preserve the established lint target when adding CLI package metadata.
+[tool.ruff]
+target-version = "py310"

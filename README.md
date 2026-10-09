@@ -4,6 +4,13 @@ Agent observability and evidence-grounded incident response. A dark-first Next.j
 
 ## Run locally
 
+The Next.js landing page is at `/`; the observability workspace starts at
+`/dashboard`. Install the interactive client with uv or Homebrew and run
+`agentscope repl` (also accepts `Agenscope Repl`). See the
+[CLI installation and demo guide](docs/cli.md). The REPL connects to an existing
+server; `demo` creates labeled synthetic telemetry and a persisted investigation.
+Approval and execution remain separate explicit commands.
+
 Requires Python 3.12+, Node.js 22+, and [uv](https://docs.astral.sh/uv/).
 
 ```bash
@@ -91,6 +98,7 @@ Local data and the generated dashboard token live in ignored `.local/`. Do not c
 
 ```bash
 npm run test:api                     # API + SDK tests; isolated temporary database
+npm run test:cli                     # REPL safety, errors and aliases
 npm run test:web                     # Vitest presentation/trace tests
 npm --prefix apps/web run typecheck
 .venv/bin/ruff check apps/api packages/python-sdk examples

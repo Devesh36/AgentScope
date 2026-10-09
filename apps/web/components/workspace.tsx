@@ -108,7 +108,7 @@ export function useAction() {
   return { act, pending };
 }
 const nav = [
-  ["Overview", "/", LayoutDashboard],
+  ["Overview", "/dashboard", LayoutDashboard],
   ["Agents", "/agents", Bot],
   ["Run explorer", "/runs", Waypoints],
   ["Incident center", "/incidents", ShieldAlert],
@@ -208,7 +208,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     localStorage.setItem("agentscope-project", id);
   };
   const current = [...nav, ["Settings", "/settings", Settings2] as const].find(
-    (n) => (n[1] === "/" ? path === "/" : path.startsWith(n[1])),
+    (n) => path.startsWith(n[1]),
   );
   return (
     <Ctx.Provider
@@ -254,7 +254,7 @@ function Shell({ children }: { children: React.ReactNode }) {
               <Link
                 href={href}
                 key={href}
-                className={`nav-item ${(href === "/" ? path === "/" : path.startsWith(href)) ? "active" : ""}`}
+                className={`nav-item ${path.startsWith(href) ? "active" : ""}`}
               >
                 <Icon size={17} />
                 <span>{name}</span>

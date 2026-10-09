@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Workspace } from "@/components/workspace";
 export const metadata: Metadata = {
   title: "AgentScope · Agent observability",
   description:
@@ -13,9 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Workspace>{children}</Workspace>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

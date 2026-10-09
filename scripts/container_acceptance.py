@@ -309,15 +309,22 @@ class Stack:
         for name, args, cwd in [
             ("api_sdk_tests", [str(python), "-m", "pytest", "-q"], ROOT / "apps/api"),
             (
+                "cli_tests",
+                [str(python), "-m", "pytest", "packages/cli/tests", "-q"],
+                ROOT,
+            ),
+            (
                 "ruff",
                 [
                     str(ROOT / ".venv/bin/ruff"),
                     "check",
                     "apps/api",
                     "packages/python-sdk",
+                    "packages/cli",
                     "examples",
                     "infrastructure/docker",
                     "scripts/container_acceptance.py",
+                    "scripts/cli_acceptance.py",
                 ],
                 ROOT,
             ),
@@ -695,6 +702,26 @@ class Stack:
         )
         return self.snapshot()["counts"]
 
+    def cli(self):
+        self.command(
+            [
+                str(ROOT / ".venv/bin/python"),
+                str(ROOT / "scripts/cli_acceptance.py"),
+                "--url",
+                f"http://127.0.0.1:{self.config['api_port']}",
+                "--dashboard",
+                f"http://127.0.0.1:{self.config['web_port']}",
+                "--token-file",
+                str(self.state / "secrets/admin-token"),
+                "--report",
+                str(self.state / "cli.json"),
+            ],
+            capture=False,
+        )
+        measurements = json.loads((self.state / "cli.json").read_text())
+        measurements["restart"] = self.restart()
+        return measurements
+
     def secret_audit(self):
         output = self.command(self.compose + ["logs", "--no-color"])
         forbidden = self.secret_values + [
@@ -820,6 +847,7 @@ def main():
         stack.check("browser_workflow_and_restart_persistence", stack.browser)
         stack.check("secrets_absent_from_logs_and_image_metadata", stack.secret_audit)
         stack.check("final_audit_and_key_revocation", stack.audit)
+        stack.check("cli_demo_approval_verification_persistence", stack.cli)
         stack.check("final_graceful_shutdown", stack.stop)
         stack.report["volume_retained"] = f"{stack.project}_postgres-data"
         stack.report["branch"] = stack.command(

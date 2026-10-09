@@ -16,3 +16,5 @@
 **/.ruff_cache
 **/playwright-report
 **/.next-*
+/build
+/dist

@@ -75,14 +75,14 @@ export function Dashboard() {
     );
   if (segments[0] === "settings") return <SettingsPage />;
   if (segments[0] === "simulation") return <SimulationPage />;
-  if (segments.length)
+  if (segments.length && !(segments.length === 1 && segments[0] === "dashboard"))
     return (
       <Empty
         title="Page not found"
         description="This page doesn’t exist in your workspace."
         action={
           <Button asChild>
-            <Link href="/">Back to overview</Link>
+            <Link href="/dashboard">Back to overview</Link>
           </Button>
         }
       />

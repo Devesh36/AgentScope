@@ -26,7 +26,7 @@ test("container restart preserves real telemetry, audit, settings and reconnects
       }
     };
   });
-  await page.goto("/");
+  await page.goto("/dashboard");
   await page.getByLabel("Project", { exact: true }).selectOption(sdk.project);
   await expect(page.getByText("container-calculator", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("LIVE TELEMETRY UPDATES", { exact: true })).toBeVisible();

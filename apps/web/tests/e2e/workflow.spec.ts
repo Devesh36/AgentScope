@@ -21,7 +21,7 @@ test("complete observability, investigation, approval, and recovery workflow", a
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/");
+  await page.goto("/dashboard");
   await page.getByLabel("Project", { exact: true }).selectOption(projectId);
   await expect(
     page.getByText("Ready to receive your first trace"),
