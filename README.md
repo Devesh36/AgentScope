@@ -4,6 +4,10 @@ Agent observability and evidence-grounded incident response. A dark-first Next.j
 
 ## Run locally
 
+To publish **only the landing page** on Vercel, select Root Directory
+**apps/landing**. It exports a static Next.js site and needs no server secrets.
+See the [Vercel import settings and local checks](apps/landing/README.md).
+
 The Next.js landing page is at `/`; the observability workspace starts at
 `/dashboard`. Install the interactive client with uv or Homebrew and run
 `agentscope repl` (also accepts `Agenscope Repl`). See the

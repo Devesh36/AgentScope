@@ -16,3 +16,5 @@ playwright-report/
 coverage/
 /build/
 /dist/
+/apps/landing/out/
+.vercel/
