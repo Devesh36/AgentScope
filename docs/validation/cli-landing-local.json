@@ -1,0 +1,117 @@
+{
+  "execution": "local",
+  "source_commit": "ed613783861967ca3b5003d170cf0bb3172acf8a",
+  "branch": "feat/local-container-acceptance",
+  "date": "2026-10-09",
+  "stack": "agentscope-accept-0da67696b680",
+  "native": {
+    "api_sdk_and_cli_integration_tests": 22,
+    "cli_unit_tests": 11,
+    "web_unit_tests": 3,
+    "ruff": "passed",
+    "mypy": "passed",
+    "typecheck": "passed",
+    "next_production_build": "passed"
+  },
+  "installation": {
+    "uv_tool_local": "passed",
+    "executables": [
+      "agentscope",
+      "agenscope",
+      "Agenscope"
+    ],
+    "requested_alias": "Agenscope Repl",
+    "homebrew_launcher_without_site_packages": "passed",
+    "homebrew_install": "not run: Homebrew and Ruby are unavailable in this Linux environment"
+  },
+  "container": {
+    "compose_validation": "passed",
+    "web_build": "passed",
+    "api_image": "unchanged application image reused from preceding container acceptance",
+    "non_root_application_containers": true,
+    "loopback_ports": [
+      18010,
+      13010
+    ],
+    "first_start": "fresh PostgreSQL database; migrations and readiness passed",
+    "real_sdk": {
+      "runs": 1,
+      "spans": 3,
+      "exported_events": 4,
+      "lost_ack_retry_failures": 1,
+      "dropped_events": 0,
+      "replayed_events_accepted": 0
+    }
+  },
+  "cli_demo": {
+    "execution": "local",
+    "status": "passed",
+    "project": "862e7a61-8334-4b0c-83e7-ab7e42bef50d",
+    "investigation": "315f491e-fcb6-4ebe-8393-3806a9fd7003",
+    "synthetic_runs": 26,
+    "evidence_references": 8,
+    "verification": "VERIFIED_RECOVERED",
+    "observation_seconds": 15.88,
+    "duplicate_actions": 0,
+    "seconds": 18.49
+  },
+  "browser": {
+    "tests_passed": 4,
+    "desktop_mobile_landing": true,
+    "unauthenticated_home_status": 200,
+    "unauthenticated_dashboard_api_settings_status": 401,
+    "backend_calls_from_landing": 0,
+    "copy_uv_and_homebrew": "passed",
+    "existing_workflow_and_key_lifecycle": "passed",
+    "reconnection": {
+      "before": {
+        "opens": 1,
+        "errors": 0,
+        "refreshes": 1
+      },
+      "after": {
+        "opens": 2,
+        "errors": 6,
+        "refreshes": 3
+      },
+      "replayAccepted": 0,
+      "duplicateActions": 0
+    }
+  },
+  "persistence": {
+    "shutdown": {
+      "seconds": 14.14,
+      "exit_codes": {
+        "api": 143,
+        "postgres": 0,
+        "web": 143
+      }
+    },
+    "volume": "agentscope-accept-0da67696b680_postgres-data",
+    "records": {
+      "projects": 6,
+      "agents": 17,
+      "runs": 105,
+      "spans": 435,
+      "telemetry_events": 436,
+      "anomalies": 4,
+      "incidents": 4,
+      "investigations": 4,
+      "remediations": 4,
+      "settings": 4,
+      "audit_log": 39,
+      "api_keys": 4
+    },
+    "all_record_checksums_match": true
+  },
+  "secret_audit": "passed: mounted secret values absent from logs, image metadata and CLI output",
+  "docker_limitation": {
+    "initial_web_build_exhausted_32_gb_vfs_disk": true,
+    "failed_first_database_start_reason": "No space left on device",
+    "recovery": "Removed only new web build cache records zfnhq2jon7o6q3lpyxnbenezs and w1u49q87ehjvdu4k16z47hiyb; no images, volumes or database data deleted",
+    "available_after_cache_cleanup": "1.4 GiB"
+  },
+  "hosted_ci": "not observed; local results only",
+  "data_preserved": true,
+  "services_stopped": true
+}

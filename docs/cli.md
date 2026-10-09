@@ -123,6 +123,8 @@ npm --prefix apps/web run test:e2e
 CI additionally installs with uv and tests the Homebrew formula on macOS.
 Hosted CI results are separate from local validation.
 
+See [the measured local validation and remaining limitations](cli-validation.md).
+
 The live CLI acceptance creates a dedicated synthetic project and explicitly exercises
 approval, execution, delayed recovery and duplicate-action checks:
 
