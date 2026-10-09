@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy>=2,<3
+pydantic>=2,<3
+alembic
+psycopg[binary]
+redis
+langgraph
+opentelemetry-proto
+httpx
+pytest
+ruff
+mypy
