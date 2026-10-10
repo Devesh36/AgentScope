@@ -18,6 +18,7 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
+from .chat import PROVIDERS, ChatError, Conversation, Models, Parser, arguments, wizard
 from .terminal import Terminal, plain
 
 SCENARIOS = (
@@ -154,6 +155,10 @@ class Repl(cmd.Cmd):
         self.watch_lock = None
         self.project_name = None
         self.terminal = Terminal(self.stdout)
+        self.models = Models()
+        self.conversation = Conversation(self.models)
+        self.chat_context = False
+        self.command_only = False
 
     @property
     def prompt(self):
@@ -167,6 +172,25 @@ class Repl(cmd.Cmd):
 
     def preloop(self):
         self.terminal.banner(__version__, str(Path.cwd()), self.client.endpoint)
+        try:
+            name, profile = self.models.active()
+            self.terminal.text(
+                f"Chat model: {name} · {profile['model']}. Type a question, or model check to test the connection."
+            )
+        except ChatError as exc:
+            self.terminal.text(str(exc), "muted")
+            if sys.stdin.isatty() and self.terminal.interactive:
+                try:
+                    wizard(
+                        self.models, self.terminal, read=input, hidden=getpass.getpass
+                    )
+                except (ChatError, EOFError, KeyboardInterrupt) as error:
+                    self.terminal.text(
+                        str(error)
+                        if isinstance(error, ChatError)
+                        else "Setup cancelled. Run configure before chatting.",
+                        "muted",
+                    )
 
     def write(self, value):
         for line in str(value).split("\n"):
@@ -174,11 +198,14 @@ class Repl(cmd.Cmd):
 
     def onecmd(self, line):
         # Slash commands are aliases for the same handlers, including safeguards.
+        self.command_only = line.lstrip().startswith("/")
         line = line.lstrip().removeprefix("/")
         try:
             return super().onecmd(line)
-        except ClientError as exc:
+        except (ClientError, ChatError) as exc:
             self.terminal.text(f"Error: {exc}", "error")
+        except EOFError:
+            self.terminal.text("Setup cancelled. Run configure when ready.", "muted")
         except OSError:
             self.terminal.text(
                 "Error: A local file or process could not be accessed. Check permissions and retry.",
@@ -192,6 +219,8 @@ class Repl(cmd.Cmd):
                 f"Interrupted.{monitoring} Submitted server actions may still complete. Use status or investigation to inspect them.",
                 "muted",
             )
+        finally:
+            self.command_only = False
         return False
 
     def emptyline(self):
@@ -203,6 +232,13 @@ class Repl(cmd.Cmd):
         candidates = self.completenames(command)
         if not candidates:
             candidates = difflib.get_close_matches(command, self.completenames(""), n=1)
+        if not self.command_only and not (
+            len(line.split()) == 1
+            and candidates
+            and command.lower() not in ("hi", "hello", "hey")
+        ):
+            self.do_chat(line)
+            return
         hint = f" Did you mean {candidates[0]}?" if candidates else ""
         self.terminal.text(
             f"Unknown command: {command}.{hint} Type help to browse commands.", "error"
@@ -231,6 +267,29 @@ class Repl(cmd.Cmd):
             return
         # Help is deliberately local: browsing commands never requests credentials.
         groups = [
+            (
+                "Chat with AgentScope",
+                [
+                    (
+                        "configure [PROVIDER]",
+                        "Set up your assistant model and credentials",
+                    ),
+                    (
+                        "model [list|providers|check]",
+                        "Inspect profiles and test the selected model",
+                    ),
+                    ("model use PROFILE", "Switch your assistant provider/model"),
+                    (
+                        "chat MESSAGE / ask MESSAGE",
+                        "Ask a question; ordinary sentences work too",
+                    ),
+                    ("chat reset", "Clear the in-memory conversation"),
+                    (
+                        "context on|off",
+                        "Choose whether chat receives project summary metrics",
+                    ),
+                ],
+            ),
             (
                 "Monitor",
                 [
@@ -291,25 +350,183 @@ class Repl(cmd.Cmd):
 
     do_commands = do_help
 
+    def do_configure(self, arg):
+        """configure [PROVIDER] [--name PROFILE] [--model MODEL] [--base-url URL] [--key-env VARIABLE | --key-file PATH]: configure AgentScope's chat model. With no arguments, opens hidden-key setup in an interactive terminal. API keys are never command arguments. Use model providers to see integrations."""
+        if not arg.strip():
+            if not sys.stdin.isatty():
+                raise ChatError(
+                    "Interactive setup requires a terminal. Use configure PROVIDER --model MODEL --key-env VARIABLE or --key-file PATH."
+                )
+            wizard(self.models, self.terminal, read=input, hidden=getpass.getpass)
+        elif arg.strip() in ("--help", "-h"):
+            self.do_help("configure")
+            return
+        else:
+            parser = Parser(add_help=False)
+            arguments(parser)
+            try:
+                options = parser.parse_args(shlex.split(arg))
+            except ValueError:
+                raise ChatError("Unbalanced quoting. Use help configure.") from None
+            name, profile = self.models.save(options)
+            self.terminal.text(
+                f"Chat model configured: {name} · {profile['model']}. Use model check to verify access."
+            )
+        self.conversation.reset()
+
+    def do_model(self, arg):
+        """model [status|list|providers|check|use PROFILE]: view chat configuration, select a saved profile, or test the provider with a short real model call. CLI profiles use their CLI login. Configuration never prints credential values."""
+        parts = arg.split()
+        action = parts[0] if parts else "status"
+        if action == "providers" and len(parts) == 1:
+            self.terminal.heading("Chat providers")
+            self.terminal.pairs(
+                [
+                    (
+                        name,
+                        f"{value[1] or 'choose a model'} · {'existing CLI login' if value[0] in ('codex', 'claude-cli') else value[3] or 'local, no key'}",
+                    )
+                    for name, value in PROVIDERS.items()
+                ]
+            )
+            self.terminal.text(
+                "Claude aliases Anthropic; codex uses the Codex CLI; openai-codex uses the OpenAI API. Models depend on your account or local installation."
+            )
+        elif action == "list" and len(parts) == 1:
+            value = self.models.load()
+            self.terminal.heading("Saved chat models")
+            self.terminal.pairs(
+                [
+                    (
+                        name + (" *" if value["active"] == name else ""),
+                        f"{profile['provider']} · {profile['model']}",
+                    )
+                    for name, profile in value["profiles"].items()
+                ]
+            )
+            if not value["profiles"]:
+                self.terminal.text("No profiles yet. Run configure.")
+        elif action == "use" and len(parts) == 2:
+            self.models.use(parts[1])
+            self.conversation.reset()
+            self.terminal.text(
+                f"Chat profile selected: {parts[1]}. Conversation cleared."
+            )
+        elif action == "status" and len(parts) <= 1:
+            name, profile = self.models.active()
+            try:
+                self.models.credential(profile)
+                readiness = "Credential or CLI available; connection not tested"
+            except ChatError as exc:
+                readiness = str(exc)
+            self.terminal.heading("AgentScope's chat model")
+            self.terminal.pairs(
+                [
+                    ("Profile", name),
+                    ("Provider", profile["provider"]),
+                    ("Model", profile["model"]),
+                    ("Readiness", readiness),
+                    (
+                        "Project context",
+                        "on: summary metrics" if self.chat_context else "off",
+                    ),
+                ]
+            )
+        elif action == "check" and len(parts) == 1:
+            self.terminal.text("Testing the configured model…", "muted")
+            name, model, answer = Conversation(self.models).ask(
+                "Introduce yourself as AgentScope in one sentence."
+            )
+            self.render_answer(name, model, answer)
+        else:
+            raise ChatError("Use model status, list, providers, check, or use PROFILE.")
+
+    def do_context(self, arg):
+        """context on|off: opt in to sending the selected project's summary metrics to your chat provider. No prompts, trace bodies, credentials, or source files are included. Changing this clears the conversation."""
+        if arg.strip() not in ("on", "off"):
+            raise ChatError(
+                "Use context on or context off. Project summaries are off by default."
+            )
+        self.chat_context = arg.strip() == "on"
+        self.conversation.reset()
+        self.terminal.text(
+            "Project summary context enabled; it will be sent to your selected chat provider."
+            if self.chat_context
+            else "Project context disabled. Conversation cleared."
+        )
+
+    def render_answer(self, name, model, answer):
+        self.terminal.heading("AgentScope", f"{name} · {model}")
+        for line in answer.splitlines():
+            self.terminal.text(line)
+
+    def do_chat(self, arg):
+        """chat MESSAGE: ask AgentScope through your configured model. Ordinary questions and ask MESSAGE also work. chat reset clears the in-memory history; chat never runs commands or modifies your project."""
+        if arg.strip() == "reset":
+            self.conversation.reset()
+            self.terminal.text("Conversation cleared; telemetry is preserved.")
+            return
+        self.models.active()
+        context = None
+        if self.chat_context:
+            if not self.client.project:
+                raise ChatError(
+                    "Select a project with watch or use before chatting with context; context off asks without project data."
+                )
+            metrics = self.client.request("/api/v1/metrics/overview")
+            fields = (
+                "total_runs",
+                "active_runs",
+                "completed_runs",
+                "failed_runs",
+                "llm_calls",
+                "llm_errors",
+                "tool_calls",
+                "tool_errors",
+                "input_tokens",
+                "output_tokens",
+                "tokens",
+                "cost",
+                "active_incidents",
+                "grounding_evaluations",
+                "unsupported_claims",
+                "latency_p50",
+                "latency_p95",
+                "latency_p99",
+                "updated_at",
+            )
+            context = {"window_hours": 24, **{key: metrics.get(key) for key in fields}}
+        self.terminal.text("AgentScope is thinking…", "muted")
+        name, model, answer = self.conversation.ask(
+            arg, context=context, project=self.client.project
+        )
+        self.render_answer(name, model, answer)
+
+    do_ask = do_chat
+
     def do_guide(self, arg):
         """guide: show a practical monitoring workflow; no server connection required."""
         self.terminal.heading("Your first session")
         self.terminal.pairs(
             [
                 (
-                    "1. Start",
+                    "1. Configure",
+                    "configure, then model check; ask Who are you? to meet AgentScope",
+                ),
+                (
+                    "2. Start",
                     "watch . --no-open (leave off --no-open to launch the browser)",
                 ),
                 (
-                    "2. Launch",
+                    "3. Launch",
                     "In another terminal: agentscope run -- python app.py or agentscope run -- npm start",
                 ),
-                ("3. Inspect", "status -> agents -> runs -> incidents -> open"),
+                ("4. Inspect", "status -> agents -> runs -> incidents -> open"),
                 (
-                    "4. Investigate",
+                    "5. Investigate",
                     "investigate INCIDENT_ID, then investigation to read the evidence",
                 ),
-                ("5. Finish", "stop keeps telemetry; exit closes this session"),
+                ("6. Finish", "stop keeps telemetry; exit closes this session"),
             ]
         )
         self.terminal.heading("Useful notes")
@@ -847,6 +1064,10 @@ def main(argv=None):
         "--version", action="version", version=f"AgentScope {__version__}"
     )
     sub = parser.add_subparsers(dest="command", required=True)
+    setup = sub.add_parser(
+        "configure", help="Configure AgentScope's conversational model before chatting."
+    )
+    arguments(setup)
     repl = sub.add_parser(
         "repl", help="Open the interactive client (help works offline)."
     )
@@ -876,6 +1097,20 @@ def main(argv=None):
         args_list[0] = "repl"
     args = parser.parse_args(args_list)
     try:
+        if args.command == "configure":
+            models = Models()
+            if args.provider:
+                name, profile = models.save(args)
+                print(
+                    f"Chat model configured: {name} · {profile['model']}. Start agentscope repl, then model check."
+                )
+            elif sys.stdin.isatty():
+                wizard(models, Terminal(sys.stdout), read=input, hidden=getpass.getpass)
+            else:
+                raise ChatError(
+                    "Choose a provider with agentscope configure PROVIDER --model MODEL --key-env VARIABLE."
+                )
+            return 0
         if args.command == "watch":
             return watch_main(args)
         if args.command == "run":
@@ -885,8 +1120,10 @@ def main(argv=None):
             shell.cmdloop()
         finally:
             shell.close_watch()
-    except ClientError as exc:
+    except (ClientError, ChatError) as exc:
         parser.exit(2, f"Error: {exc}\n")
+    except EOFError:
+        parser.exit(2, "Setup cancelled. Run agentscope configure when ready.\n")
     except KeyboardInterrupt:
         print("\nClient closed; server state preserved.")
         return 130

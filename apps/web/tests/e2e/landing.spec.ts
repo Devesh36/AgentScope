@@ -66,6 +66,10 @@ test("public documentation explains the workflow, serves terminal screenshots, a
   await page.getByRole("link", { name: "Docs", exact: true }).click();
   await expect(page).toHaveURL(/\/docs$/);
   await expect(page.getByRole("heading", { name: "What is AgentScope?" })).toBeVisible();
+  await page.getByRole("link", { name: "Configure the assistant", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Configure and chat with AgentScope", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Copy Meet your AgentScope assistant", exact: true }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("agentscope configure");
   await page.getByRole("link", { name: "Connect the CLI", exact: true }).click();
   await page.getByRole("button", { name: "Copy Connect from the checkout", exact: true }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("--token-file .local/admin-token");

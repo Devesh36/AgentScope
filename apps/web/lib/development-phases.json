@@ -44,6 +44,11 @@
       "id": "performance",
       "title": "Faster monitoring with less overhead",
       "summary": "Batched telemetry and database summaries reduce monitoring overhead. Dashboard pages load only their own features and use live updates efficiently."
+    },
+    {
+      "id": "chat",
+      "title": "A conversational AgentScope workspace",
+      "summary": "Configure the assistant model before chatting, ask AgentScope about its capabilities, and discuss project summary metrics through your chosen provider."
     }
   ],
   "commits": [
@@ -152,12 +157,20 @@
       "summary": "Added an amber terminal layout, project-aware prompts, grouped help, readable activity and investigation summaries, slash aliases, useful workflow commands, and contextual guidance."
     },
     {
-      "sha": null,
+      "sha": "5052c8f86b30ffacc89b22e181340f2ab3164c99",
       "date": "2026-10-10",
       "subject": "Optimize telemetry ingestion and dashboard performance",
       "phase": "performance",
       "title": "Reduced monitoring and dashboard overhead",
       "summary": "Batched ingestion and history queries, added database indexes, split dashboard pages into smaller bundles, reduced idle polling, and corrected failure health reporting. Added reproducible performance checks."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-10",
+      "subject": "Add configured multi-provider chat to the AgentScope REPL",
+      "phase": "chat",
+      "title": "Added model setup and conversational REPL support",
+      "summary": "Added first-run assistant setup, provider profiles, natural-language chat with conversation history, optional project summaries, and integrations for OpenAI, Codex, Claude/Anthropic, Gemini, local models, and compatible APIs."
     }
   ]
 }

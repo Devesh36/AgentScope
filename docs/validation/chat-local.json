@@ -1,0 +1,58 @@
+{
+  "date_utc": "2026-10-10",
+  "release": "0.4.0",
+  "cli_tests": 51,
+  "api_tests": 32,
+  "web_unit_tests": 3,
+  "browser_tests": 3,
+  "both_apps_build_and_typecheck": "passed",
+  "standalone_landing_export": "passed",
+  "native_provider_validation": "Local HTTP fixtures: Responses, Anthropic Messages, Gemini generateContent, and compatible chat protocols; no paid-provider calls.",
+  "cli_provider_validation": "Isolated Codex/Claude executable fixtures verify stdin, isolated working directory, response parsing, and execution restrictions. Live CLI login was not exercised.",
+  "packaged_runtime": {
+    "version": "0.4.0",
+    "wheel_and_sdist": "passed",
+    "fresh_runtime_setup": "passed",
+    "migration": "002",
+    "repl_chat_model_check_watch_run_context_status_stop": "passed",
+    "real_chat_provider": "Local CPU SmolLM2-135M-Instruct",
+    "provider_chat_calls": 3,
+    "assistant_chat_in_application_telemetry": false,
+    "paid_provider_calls": 0
+  },
+  "watch_acceptance": {
+    "provider_calls": "Local mock HTTP only",
+    "python_sdks": {
+      "openai": "2.54.0",
+      "anthropic": "0.125.0"
+    },
+    "node_sdks": {
+      "openai": "7.32.0",
+      "anthropic": "0.133.0"
+    },
+    "checks": [
+      "Automatic startup and stable project provisioning",
+      "Duplicate watcher rejected without affecting the live session",
+      "Python/Node real provider SDKs, sync/async calls, SSE streams and exceptions",
+      "Usage/timing persisted with metadata-only telemetry",
+      "Whole-agent/tool grouping without duplicate LLM spans",
+      "Grounding remains unassessed without an evaluator",
+      "Captured tool-loop telemetry produces an evidence-grounded investigation",
+      "Explicit grounding assessment displayed without duplicate capture",
+      "Project files unchanged and credential files private",
+      "Production browser checks: automatic project selection, live metrics, grounding, public docs, and responsive layouts",
+      "Graceful shutdown and restart persistence",
+      "Unexpected parent death releases owned services and allows restart",
+      "REPL watch remains interactive and stop/exit preserve records",
+      "Finite watch preserves application exit code and stops services"
+    ],
+    "llm_calls": 22,
+    "llm_errors": 2,
+    "unsupported_claims": 2
+  },
+  "limitations": [
+    "No configured cloud-provider credentials were available; paid provider accounts and quotas were not tested.",
+    "The real local model is a small CPU demo, not a measure of production answer quality.",
+    "Chat provides guidance and optional summary interpretation; it does not execute REPL actions or automatically assess factual accuracy."
+  ]
+}

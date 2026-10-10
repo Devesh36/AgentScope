@@ -4,7 +4,7 @@
 
 AgentScope is a self-hosted observability workspace for AI agents. It brings together execution traces, tool calls, model usage, incident detection, and evidence-grounded investigations so you can understand what happened and decide what to do next.
 
-The local workflow runs without a model API key. Start the server, connect the Python SDK or interactive CLI, and inspect the same persisted records in the dashboard.
+Local monitoring runs without a model API key. The conversational REPL requires a configured assistant model: a provider API, a local model, or an authenticated Codex/Claude CLI. Start the server, connect the Python SDK or interactive CLI, and inspect the same persisted records in the dashboard.
 
 [Getting started](#getting-started) · [CLI guide](docs/cli.md) · [API reference](docs/api.md) · [Container guide](docs/local-containers.md) · [Development](#development)
 
@@ -31,6 +31,19 @@ The local workflow runs without a model API key. Start the server, connect the P
 - Git
 
 Docker, PostgreSQL, Redis, and external model credentials are not required for native development.
+
+### Configure and meet your assistant
+
+```bash
+uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"
+agentscope configure
+cd /path/to/your/project
+agentscope repl
+```
+
+Setup guides you through AgentScope's assistant provider, model, and hidden credential entry. Your first interactive REPL opens setup automatically if needed. Inside the REPL, type `model check`, then **Who are you?** or **What does AgentScope do?** to receive an answer from your chosen model. Conversation history supports follow-up questions.
+
+Supported options include OpenAI/Codex, Anthropic/Claude, Gemini, OpenRouter, Groq, DeepSeek, Ollama, compatible endpoints, and existing Codex/Claude CLI logins. Use `model list`, `model use PROFILE`, and `chat reset` to manage the session. The assistant model is separate from your application's models; project summaries are shared only after `context on`. See [the chat and provider guide](docs/chat.md).
 
 ### Monitor your existing project
 
@@ -224,6 +237,7 @@ For Vercel, use **apps/landing** as the Root Directory and **main** as the produ
 ## Documentation
 
 - **Public `/docs` page:** product overview, local setup, CLI walkthrough, terminal screenshots, SDK integration, and troubleshooting.
+- [Chat guide](docs/chat.md): assistant setup, supported providers, model profiles, and optional project context.
 - [Watch guide](docs/watch.md): automatic local startup, supported runtime capture, persistence, and grounding checks.
 - [CLI guide](docs/cli.md): installation, authentication, scenarios, and explicit intervention commands.
 - [API reference](docs/api.md): endpoints, project authorization, normalized events, and OTLP ingestion.

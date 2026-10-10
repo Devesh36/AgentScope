@@ -82,6 +82,8 @@ class Terminal:
         self.heading("Start here")
         self.pairs(
             [
+                ("configure", "Choose AgentScope's chat model before asking questions"),
+                ("Who are you?", "Meet AgentScope through your configured model"),
                 ("watch", "Start monitoring this repository"),
                 ("guide", "Walk through your first monitoring session"),
                 ("help", "Browse commands and examples"),

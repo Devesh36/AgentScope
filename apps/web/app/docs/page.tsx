@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 const repository = "https://github.com/Devesh36/AgentScope";
 const sections = [
   ["overview", "What is AgentScope?"],
+  ["chat", "Configure the assistant"],
   ["watch", "Monitor your project"],
   ["quickstart", "Run locally"],
   ["cli", "Connect the CLI"],
@@ -43,7 +44,7 @@ export default function DocumentationPage() {
             <span className="landing-kicker">AGENTSCOPE DOCUMENTATION</span>
             <h1>Understand every run.<br /><span>Start here.</span></h1>
             <p>A practical guide to observing your agents, investigating the unexpected, and finding your next step in the evidence.</p>
-            <div className="docs-meta"><span>Python 3.12+</span><span>Node.js 24</span><span>No model key needed locally</span></div>
+            <div className="docs-meta"><span>Python 3.12+</span><span>Node.js 24</span><span>Configure a model for REPL chat</span></div>
           </div>
 
           <section id="overview" className="docs-section">
@@ -56,6 +57,27 @@ export default function DocumentationPage() {
               <div><ShieldCheck size={20} /><h3>Verify</h3><p>Practice explicit demo intervention and measure follow-up recovery.</p></div>
             </div>
             <div className="docs-note"><strong>You stay in control.</strong><p>Real-agent remediation is recommendation-only. Executable actions are limited to an isolated synthetic demo adapter, require an enabled demo policy, and keep approval separate from execution.</p></div>
+          </section>
+
+          <section id="chat" className="docs-section">
+            <span className="docs-section-number">START HERE / YOUR ASSISTANT</span><h2>Configure and chat with AgentScope</h2>
+            <p>Choose AgentScope&apos;s own assistant model before asking questions. Run <code>agentscope configure</code>, or open the REPL: its first interactive launch guides you through provider, model, and credential setup. Keys are entered in a hidden prompt or referenced through your existing secret environment.</p>
+            <DocCode title="Meet your AgentScope assistant">{`agentscope configure
+agentscope repl
+# Inside the REPL:
+model check
+Who are you?
+What can you help me with?
+How do I monitor this project?
+watch`}</DocCode>
+            <p>Chat supports OpenAI and Codex models, Anthropic/Claude, Gemini, OpenRouter, Groq, DeepSeek, Ollama, and OpenAI-compatible endpoints. Codex and Claude CLI profiles can use their existing CLI login. Your chosen account or local server determines which model identifiers are available.</p>
+            <DocCode title="Configure an existing provider credential">{`agentscope configure openai --key-env OPENAI_API_KEY
+# Or:
+agentscope configure claude --key-env ANTHROPIC_API_KEY
+agentscope configure codex`}</DocCode>
+            <p>AgentScope answers through your selected model and remembers this session&apos;s conversation. Use <code>model list</code>, <code>model use PROFILE</code>, and <code>chat reset</code> to manage it. Chat explains commands; enter <code>watch</code> and other actions yourself.</p>
+            <div className="docs-note"><strong>You choose what the assistant sees.</strong><p>Project context is off by default. After selecting a project, <code>context on</code> sends summary usage, failure, incident, and grounding metrics to the chosen provider. It excludes prompts, trace bodies, source files, and credentials. <code>context off</code> clears that conversation.</p></div>
+            <p>This assistant configuration is separate from the models used by your application. Monitoring works without chat; choose monitoring-only mode during setup when needed. Read the <a href={`${repository}/blob/main/docs/chat.md`}>chat and provider guide</a> for configuration and authentication options.</p>
           </section>
 
           <section id="watch" className="docs-section">

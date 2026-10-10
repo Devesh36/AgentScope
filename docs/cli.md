@@ -2,6 +2,10 @@
 
 The CLI starts a local monitoring workspace with **watch**, or connects to an existing server with **repl**. The public landing page is `/`; the overview is `/dashboard`.
 
+## Configure the assistant
+
+Run `agentscope configure` before chatting. The first interactive REPL opens provider/model setup automatically if no active profile exists. Credentials use hidden input or environment/file references. Ordinary questions such as **Who are you?** go to your selected model; `chat MESSAGE` and `ask MESSAGE` also work. `model check` makes a real test call. Monitoring-only mode remains available. See [the chat guide](chat.md) for OpenAI/Codex, Anthropic/Claude, Gemini, local models, and additional providers.
+
 ## Monitor your project
 
 ```bash
@@ -24,6 +28,12 @@ configured API target. It checks connectivity when you request server data.
 The prompt shows the selected project and whether this REPL owns a watch session.
 
 ```text
+configure               # Set up the assistant model
+model check             # Test the actual provider connection
+Who are you?            # Ask the configured model about AgentScope
+model list              # Inspect saved model profiles
+context on              # Share selected-project summary metrics (optional)
+chat reset              # Clear this conversation
 guide                   # Learn the monitoring workflow without connecting
 /help                   # Browse commands grouped by task
 help watch              # Read usage and examples for one command
@@ -76,13 +86,13 @@ Agenscope Repl
 
 This installs `agentscope-cli` from this repository, not from PyPI. In a checkout,
 use `uv tool install .`. For a reproducible snapshot, replace the branch after `@`
-with the release tag `v0.3.2` or a full source commit. If uv reports its tool bin
+with the release tag `v0.4.0` or a full source commit. If uv reports its tool bin
 directory is missing from PATH, follow its shell setup instructions. The Python SDK is supplied to applications launched through watch/run; it is also installable separately for manual integration.
 
 ## Homebrew
 
 Requires [Homebrew](https://brew.sh/) on macOS or Linux. This custom tap uses the
-AgentScope repository, not Homebrew core. The formula uses the v0.3.2 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
+AgentScope repository, not Homebrew core. The formula uses the v0.4.0 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
 
 ```bash
 brew tap Devesh36/agentscope https://github.com/Devesh36/AgentScope.git
