@@ -32,7 +32,38 @@ The local workflow runs without a model API key. Start the server, connect the P
 
 Docker, PostgreSQL, Redis, and external model credentials are not required for native development.
 
-### Run the local workspace
+### Monitor your existing project
+
+On macOS or Linux, install the CLI with uv, then run it from your application directory. The local dashboard requires Python 3.12+, Node.js 24 with npm, and uv. Homebrew installs these prerequisites automatically; see the [CLI guide](docs/cli.md).
+
+```bash
+uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"
+cd /path/to/your/project
+agentscope watch -- python app.py
+# For a Node.js application:
+# agentscope watch -- npm start
+```
+
+AgentScope starts a loopback-only API and dashboard, creates a project and ingestion key, opens the correct project in your browser, and captures supported LLM activity while your application runs. The first installed run prepares its bundled local services; subsequent runs reuse them. Activate your application's virtual environment before launching Python.
+
+You can also use two terminals:
+
+```bash
+# Terminal 1, in your project:
+agentscope watch
+# Terminal 2, in the same project:
+agentscope run -- python app.py
+```
+
+Or open `agentscope repl`, then type `watch` (or `monitor .`). Monitoring runs in the background while `status`, `incidents`, `investigate`, and `open` remain available. `stop` stops the local watch session. The CLI watcher stays available after a short-lived application finishes; Ctrl+C stops its services. Saved records are restored when you watch the same directory again.
+
+**Automatic capture:** Python OpenAI chat completions/Responses and Anthropic Messages (`create`, synchronous/asynchronous, including `stream=True`); Node.js fetch-based OpenAI/Anthropic-compatible endpoints, including streamed responses. Existing processes need to be relaunched through `watch`/`run`. Custom fetch implementations, unsupported providers/languages, and tool or whole-agent boundaries need SDK/OTLP instrumentation. Python can use `AgentScope.from_watch()` to group calls into agent/tool traces.
+
+The dashboard displays live LLM calls, failures, latency, tokens, estimated cost, and incidents. Prompt/response content and provider credentials are excluded from automatic telemetry. **Unsupported claims remain “Not evaluated”** until an application supplies a reference-based assessment using `scope.record_grounding(...)`; this is not an automatic hallucination detector. Missing provider usage keeps cost unavailable.
+
+Watch data and credentials are stored outside your repository in `~/.agentscope/`, with `AGENTSCOPE_HOME` available for an alternative location. No source files or dependency manifests in your project are changed. Read the [watch guide](docs/watch.md) for options and supported integrations.
+
+### Run the local workspace from source
 
 ```bash
 git clone --branch main https://github.com/Devesh36/AgentScope.git
@@ -74,7 +105,7 @@ agentscope --version
 agentscope repl --token-file /path/to/server/admin-token
 ```
 
-The CLI connects to an existing server; installing it does not start the dashboard or database. Homebrew installation and connection options are covered in the [CLI guide](docs/cli.md).
+`watch` starts its own local workspace. `repl --url ... --token-file ...` also supports connecting to an existing server. Homebrew installation and connection options are covered in the [CLI guide](docs/cli.md).
 
 ### Explore a synthetic incident
 
@@ -183,6 +214,7 @@ For Vercel, use **apps/landing** as the Root Directory and **main** as the produ
 ## Documentation
 
 - **Public `/docs` page:** product overview, local setup, CLI walkthrough, terminal screenshots, SDK integration, and troubleshooting.
+- [Watch guide](docs/watch.md): automatic local startup, supported runtime capture, persistence, and grounding checks.
 - [CLI guide](docs/cli.md): installation, authentication, scenarios, and explicit intervention commands.
 - [API reference](docs/api.md): endpoints, project authorization, normalized events, and OTLP ingestion.
 - [Container guide](docs/local-containers.md): prerequisites, startup, restart, shutdown, and trust configuration.

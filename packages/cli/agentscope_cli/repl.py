@@ -5,7 +5,9 @@ import cmd
 import getpass
 import json
 import os
+import shlex
 import sys
+import threading
 import time
 import uuid
 import webbrowser
@@ -136,8 +138,8 @@ class Client:
 class Repl(cmd.Cmd):
     prompt = "agentscope> "
     intro = (
-        "AgentScope REPL · type help for commands, demo for synthetic telemetry, exit to leave.\n"
-        "Connects to your existing API. Approval and execution are separate actions."
+        "AgentScope REPL · watch to monitor this project, help for commands, exit to leave.\n"
+        "watch starts a local workspace; demo uses synthetic telemetry. Approval and execution are separate actions."
     )
 
     def __init__(
@@ -148,6 +150,10 @@ class Repl(cmd.Cmd):
         self.dashboard = server_url(dashboard)
         self.wait_seconds = wait_seconds
         self.last_investigation = None
+        self.watch_session = None
+        self.watch_stop = None
+        self.watch_thread = None
+        self.watch_lock = None
 
     def write(self, value):
         print(value, file=self.stdout)
@@ -360,26 +366,129 @@ class Repl(cmd.Cmd):
 
     def do_open(self, arg):
         """open: open the dashboard in your browser; select the printed project ID."""
-        url = f"{self.dashboard}/dashboard"
+        url = f"{self.dashboard}/dashboard" + (
+            f"?project={self.client.project}" if self.client.project else ""
+        )
         self.write(
             f"Dashboard: {url} · project {self.client.project or 'not selected'}"
         )
         webbrowser.open(url)
 
+    def do_watch(self, arg):
+        """watch [DIRECTORY] [-- APPLICATION]: monitor a local project in the background. Use stop to finish."""
+        from .watch import (
+            WatchSession,
+            add_watch_arguments,
+            exclusive,
+            validate_arguments,
+        )
+
+        if self.watch_session:
+            raise ClientError(
+                "A project is already being watched. Use stop before starting another session."
+            )
+
+        parser = argparse.ArgumentParser(prog="watch")
+        add_watch_arguments(parser)
+        try:
+            arguments = shlex.split(arg)
+        except ValueError:
+            raise ClientError("Unbalanced quoting in watch command.") from None
+        try:
+            options = parser.parse_args(arguments)
+        except SystemExit:
+            return
+        validate_arguments(options)
+        if options.once:
+            raise ClientError(
+                "Use --once with the CLI watch command; REPL watch continues until stop."
+            )
+        options.interactive = True
+        session = WatchSession(options, self.stdout)
+        lock = exclusive(session.data / "watch.lock")
+        lock.__enter__()
+        self.watch_session, self.watch_lock = session, lock
+        try:
+            session.start()
+            from .watch import private_json
+
+            private_json(
+                session.data / "session.json",
+                {
+                    "pid": os.getpid(),
+                    "url": session.endpoint,
+                    "runtime": str(session.runtime),
+                    "agent_id": session.agent,
+                },
+            )
+            session.launch()
+            self.client = Client(session.endpoint, session.data / "admin-token")
+            self.client.project = session.client.project
+            self.dashboard = session.dashboard
+            self.last_investigation = None
+            self.watch_stop = threading.Event()
+            stopped = self.watch_stop
+
+            def keep_alive():
+                while not stopped.wait(10):
+                    try:
+                        session.poll()
+                    except ClientError as exc:
+                        self.write(f"Watch: {exc}. Use stop, then watch to restart.")
+                        return
+
+            self.watch_thread = threading.Thread(
+                target=keep_alive, daemon=True, name="agentscope-watch"
+            )
+            self.watch_thread.start()
+            self.write(
+                "Monitoring continues in the background. Use status, incidents, or open to inspect this project."
+            )
+        except BaseException:
+            self.close_watch()
+            raise
+
+    do_monitor = do_watch
+
+    def close_watch(self):
+        if not self.watch_session:
+            return
+        if self.watch_stop:
+            self.watch_stop.set()
+        if self.watch_thread:
+            self.watch_thread.join(timeout=12)
+        try:
+            (self.watch_session.data / "session.json").unlink(missing_ok=True)
+            self.watch_session.close()
+        finally:
+            self.watch_lock.__exit__(None, None, None)
+            self.watch_session = self.watch_stop = self.watch_thread = (
+                self.watch_lock
+            ) = None
+
+    def do_stop(self, arg):
+        """stop: stop this REPL's watch services, preserving recorded telemetry."""
+        if not self.watch_session:
+            self.write("No local watch session is running in this REPL.")
+            return
+        self.close_watch()
+        self.write("Watch stopped; recorded telemetry is preserved.")
+
     def do_exit(self, arg):
         """exit: close the client; server data and background work are preserved."""
+        self.close_watch()
         return True
 
     do_quit = do_exit
 
     def do_EOF(self, arg):
         self.write("")
-        return True
+        return self.do_exit(arg)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="AgentScope interactive client for an existing server."
+        description="Monitor a local project or investigate agent telemetry interactively."
     )
     parser.add_argument(
         "--version", action="version", version=f"AgentScope {__version__}"
@@ -398,14 +507,39 @@ def main(argv=None):
     repl.add_argument(
         "--token-file", default=os.environ.get("AGENTSCOPE_ADMIN_TOKEN_FILE")
     )
+    from .watch import add_watch_arguments, run_existing, watch_main
+
+    watch = sub.add_parser(
+        "watch", help="Start a local dashboard and monitor supported LLM calls."
+    )
+    add_watch_arguments(watch)
+    run = sub.add_parser(
+        "run", help="Launch an application in an existing local watch session."
+    )
+    run.add_argument("--repo", default=".")
+    run.add_argument("application", nargs=argparse.REMAINDER)
     args_list = list(sys.argv[1:] if argv is None else argv)
     if args_list and args_list[0].lower() == "repl":
         args_list[0] = "repl"
     args = parser.parse_args(args_list)
     try:
-        Repl(Client(args.url, args.token_file), dashboard=args.dashboard).cmdloop()
+        if args.command == "watch":
+            return watch_main(args)
+        if args.command == "run":
+            return run_existing(args.repo, args.application)
+        shell = Repl(Client(args.url, args.token_file), dashboard=args.dashboard)
+        try:
+            shell.cmdloop()
+        finally:
+            shell.close_watch()
     except ClientError as exc:
         parser.exit(2, f"Error: {exc}\n")
     except KeyboardInterrupt:
         print("\nClient closed; server state preserved.")
+        return 130
+    except OSError:
+        parser.exit(
+            2,
+            "Error: A local process or file could not be accessed. Check permissions and prerequisites.\n",
+        )
     return 0

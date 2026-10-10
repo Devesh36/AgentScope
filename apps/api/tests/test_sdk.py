@@ -58,3 +58,15 @@ def test_exceptions_preserved_and_queue_bounded(scope):
     for _ in range(100):
         scope.heartbeat()
     assert scope._queue.qsize() == 50 and scope.stats["dropped_events"] > 0
+
+
+def test_explicit_grounding_evaluation_is_attached_to_its_llm_span(scope):
+    with scope.span("agent", "agent"), scope.llm("answer", "gpt-4o-mini") as usage:
+        scope.record_grounding(usage, 2, "reference-check")
+    llm = next(e for e in drain(scope) if e["kind"] == "llm")
+    assert llm["attributes"]["grounding"] == {
+        "unsupported_claims": 2,
+        "evaluator": "reference-check",
+    }
+    with pytest.raises(ValueError):
+        scope.record_grounding({"attributes": {}}, True, "reference-check")

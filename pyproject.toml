@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentscope-cli"
-version = "0.2.0"
-description = "AgentScope interactive observability and synthetic incident demo client"
+version = "0.3.0"
+description = "Local agent observability, automatic LLM monitoring, and interactive investigation"
 readme = "packages/cli/README.md"
 requires-python = ">=3.12"
 dependencies = []
@@ -23,6 +23,9 @@ package-dir = {"" = "packages/cli"}
 [tool.setuptools.packages.find]
 where = ["packages/cli"]
 include = ["agentscope_cli*"]
+
+[tool.setuptools.package-data]
+agentscope_cli = ["hooks/*.py", "hooks/*.cjs"]
 
 # Preserve the established lint target when adding CLI package metadata.
 [tool.ruff]

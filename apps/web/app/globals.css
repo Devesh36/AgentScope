@@ -178,6 +178,14 @@ pre,
   margin: 0 5px;
   color: #4c5660;
 }
+.watch-sessions { padding: 8px 20px; }
+.watch-session { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
+.watch-session>div { flex: 1; min-width: 0; }
+.watch-session strong { overflow-wrap: anywhere; }
+.watch-session p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.watch-session>code { font-size: 11px; color: var(--muted); }
+.watch-session .status-dot { flex-shrink: 0; }
+@media (max-width: 540px) { .watch-session { flex-wrap: wrap; } .watch-session>code { margin-left: 20px; } }
 .app-shell {
   display: flex;
   min-height: 100vh;
@@ -593,7 +601,7 @@ pre,
 }
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 11px;
   margin-bottom: 22px;
 }
@@ -629,8 +637,10 @@ pre,
   font-size: 9px;
   color: #73818e;
   margin-top: 9px;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.5;
 }
+.metric-value.metric-value-label { font-size: 18px; white-space: normal; letter-spacing: -.02em; }
 .metric-note:before {
   content: "";
   display: inline-block;
@@ -3629,4 +3639,11 @@ td a:hover {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Keep monitoring labels and unknown values readable on narrow screens. */
+@media (max-width: 540px) {
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-label { white-space: normal; align-items: flex-start; }
+  .metric-value.metric-value-label { font-size: 16px; }
 }

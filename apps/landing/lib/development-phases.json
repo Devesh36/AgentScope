@@ -34,6 +34,11 @@
       "id": "history",
       "title": "A visible development history",
       "summary": "The Phase section connects each development step to its date, purpose, and source commit, making the evolution of AgentScope easy to follow."
+    },
+    {
+      "id": "watch",
+      "title": "Monitoring starts in your project",
+      "summary": "Install AgentScope, start watch from an existing repository, and open a local dashboard with live runtime telemetry. Project setup and local services are prepared automatically."
     }
   ],
   "commits": [
@@ -118,12 +123,20 @@
       "summary": "Rewrote the README and added public /docs pages with copyable examples, troubleshooting, and two captured CLI screenshots."
     },
     {
-      "sha": null,
+      "sha": "86c46f4ccf738699f7990ddcff113feb8a8e2dcf",
       "date": "2026-10-10",
       "subject": "Add dated development phases to the landing page",
       "phase": "history",
       "title": "Added the Phase timeline",
       "summary": "Added a navigation link, dated development phases, commit links, automatic inclusion of new commits at build time, and guidance for recording future changes."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-10",
+      "subject": "Add local watch onboarding and automatic LLM monitoring",
+      "phase": "watch",
+      "title": "Added project-first watch and runtime monitoring",
+      "summary": "Added automatic local services, persistent project setup, background REPL monitoring, Python and Node.js LLM capture, dashboard activity metrics, and explicit grounding assessments."
     }
   ]
 }

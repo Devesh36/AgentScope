@@ -7,9 +7,9 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   projects: process.env.AGENTSCOPE_ACCEPTANCE_STATE ? [
-    { name: "workflow", testMatch: ["workflow.spec.ts", "landing.spec.ts"] },
+    { name: "workflow", testMatch: ["workflow.spec.ts", "landing.spec.ts", "watch.spec.ts"] },
     { name: "restart", testMatch: "container.spec.ts", dependencies: ["workflow"] },
-  ] : [{ name: "workflow", testMatch: ["workflow.spec.ts", "landing.spec.ts"] }],
+  ] : [{ name: "workflow", testMatch: ["workflow.spec.ts", "landing.spec.ts", "watch.spec.ts"] }],
   timeout: 60000,
   expect: { timeout: 15000 },
   reporter: "list",

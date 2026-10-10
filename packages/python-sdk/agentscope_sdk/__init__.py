@@ -23,6 +23,22 @@ def timestamp():
 
 
 class AgentScope:
+    @classmethod
+    def from_watch(cls):
+        """Use the project-scoped connection established by watch/run."""
+        import os
+        from pathlib import Path
+
+        try:
+            endpoint = os.environ["AGENTSCOPE_WATCH_URL"]
+            key = Path(os.environ["AGENTSCOPE_WATCH_KEY_FILE"]).read_text().strip()
+            name = os.environ["AGENTSCOPE_WATCH_AGENT_NAME"]
+        except (KeyError, OSError):
+            raise ValueError(
+                "Launch this application with agentscope watch or agentscope run first"
+            ) from None
+        return cls(endpoint, key, name, framework="Automatic LLM instrumentation")
+
     def __init__(
         self,
         endpoint,
@@ -169,7 +185,13 @@ class AgentScope:
         trace_id = parent["trace_id"] if parent else uuid4().hex
         run_id = parent["run_id"] if parent else str(uuid4())
         span_id = uuid4().hex[:16]
-        state = {"trace_id": trace_id, "run_id": run_id, "span_id": span_id}
+        state = {
+            "trace_id": trace_id,
+            "run_id": run_id,
+            "span_id": span_id,
+            "scope": self,
+            "kind": "agent" if root else kind,
+        }
         token = _context.set(state)
         started = timestamp()
         usage = {
@@ -268,6 +290,29 @@ class AgentScope:
     def heartbeat(self, name="progress"):
         with self.span(name, "progress"):
             pass
+
+    @staticmethod
+    def record_grounding(usage, unsupported_claims, evaluator):
+        """Attach an application's reference-based evaluation to an LLM span.
+
+        This records an external assessment; it does not infer factual accuracy.
+        Pass the usage dictionary yielded by scope.llm or scope.span.
+        """
+        if (
+            type(unsupported_claims) is not int
+            or not 0 <= unsupported_claims <= 1_000_000
+        ):
+            raise ValueError(
+                "unsupported_claims must be an integer between 0 and 1000000"
+            )
+        if not isinstance(evaluator, str) or not 1 <= len(evaluator) <= 100:
+            raise ValueError(
+                "evaluator must be a nonempty label of at most 100 characters"
+            )
+        usage["attributes"]["grounding"] = {
+            "unsupported_claims": unsupported_claims,
+            "evaluator": evaluator,
+        }
 
     def close(self, timeout=10):
         """Drain until the deadline; return whether the exporter has terminated.

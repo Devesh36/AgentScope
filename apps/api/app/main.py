@@ -6,7 +6,7 @@ import logging
 import os
 import secrets
 from contextlib import asynccontextmanager
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
@@ -49,6 +49,7 @@ from .schemas import (
     ProjectCreate,
     ProjectSettings,
     SimulationRequest,
+    WatchUpdate,
 )
 from .services import (
     audit,
@@ -229,6 +230,25 @@ def run_view(db, run):
             serialize(i)
             for i in db.scalars(select(Incident).where(Incident.run_id == run.id))
         ],
+    }
+
+
+def watch_view(agent):
+    value = agent.configuration["watch"]
+    if not isinstance(value, dict):
+        value = {}
+    try:
+        live = aware(datetime.fromisoformat(value["expires_at"])) > now()
+    except (KeyError, ValueError, TypeError):
+        live = False
+    status = value.get("status", "disconnected")
+    if status != "stopped" and not live:
+        status = "disconnected"
+    return {
+        "agent_id": agent.id,
+        "repository": value.get("repository", agent.name),
+        "status": status,
+        "heartbeat_at": value.get("heartbeat_at"),
     }
 
 
@@ -424,6 +444,72 @@ def events(body: EventBatch, db: DB, project_id: Scope):
             409, "Concurrent duplicate ingestion; retry the identical batch"
         )
     return result
+
+
+@app.put("/api/v1/agents/{agent_id}/watch")
+def watch_heartbeat(
+    agent_id: str, body: WatchUpdate, db: DB, project_id: Scope, _: Admin
+):
+    agent = record(db, Agent, agent_id, project_id)
+    if agent.synthetic:
+        raise HTTPException(422, "Watch sessions require a real telemetry agent")
+    previous = agent.configuration.get("watch", {})
+    if not isinstance(previous, dict):
+        previous = {}
+    session_id = str(body.session_id)
+    if previous.get("session_id") != session_id and previous.get("status") != "stopped":
+        try:
+            live = aware(datetime.fromisoformat(previous["expires_at"])) > now()
+        except (KeyError, TypeError, ValueError):
+            live = False
+        if live:
+            raise HTTPException(409, "This agent already has a live watch session")
+    value = {
+        **body.model_dump(mode="json"),
+        "heartbeat_at": now().isoformat(),
+        "expires_at": (now() + timedelta(seconds=35)).isoformat(),
+    }
+    agent.configuration = {**agent.configuration, "watch": value}
+    if body.status == "stopped":
+        # This closes the observation window, not the application's execution.
+        # Later terminal telemetry can still supply the actual outcome.
+        observed = list(
+            db.scalars(
+                select(Run).where(
+                    Run.project_id == project_id,
+                    Run.agent_id == agent_id,
+                    Run.status == "running",
+                )
+            )
+        )
+        for run in observed:
+            if run.status == "running":
+                run.status = "interrupted"
+                run.ended_at = now()
+                run.meta = {**run.meta, "observation_interrupted": True}
+        for span in db.scalars(
+            select(Span)
+            .join(Run)
+            .where(
+                Run.project_id == project_id,
+                Run.agent_id == agent_id,
+                Span.status == "running",
+            )
+        ):
+            span.status = "interrupted"
+            span.ended_at = now()
+            span.attributes = {**span.attributes, "observation_interrupted": True}
+    if previous.get("session_id") != session_id or (
+        body.status == "stopped" and previous.get("status") != "stopped"
+    ):
+        audit(
+            db,
+            project_id,
+            "watch.stopped" if body.status == "stopped" else "watch.started",
+            agent_id,
+        )
+    db.commit()
+    return value
 
 
 @app.post("/v1/traces")
@@ -802,6 +888,7 @@ def overview(
             if record(db, Run, i.run_id, project_id).synthetic == synthetic
         ]
     llms = [s for s in spans if s.kind == "llm"]
+    grounding = [s.attributes["grounding"] for s in llms if "grounding" in s.attributes]
     bins = [
         {
             "at": (since + timedelta(hours=hours * i / 24)).isoformat(),
@@ -866,6 +953,15 @@ def overview(
         "latency_p99": percentile(0.99),
         "tool_calls": sum(s.kind == "tool" for s in spans),
         "tool_errors": sum(s.kind == "tool" and s.status == "failed" for s in spans),
+        "llm_calls": len(llms),
+        "llm_errors": sum(s.status == "failed" for s in llms),
+        "grounding_evaluations": len(grounding),
+        "unsupported_claims": sum(g["unsupported_claims"] for g in grounding)
+        if grounding
+        else None,
+        "watch_sessions": [
+            watch_view(a) for a in all_agents if a.configuration.get("watch")
+        ],
         "synthetic_runs": sum(r.synthetic for r in rows),
         "series": bins,
         "agents": [agent_view(db, a) for a in all_agents],

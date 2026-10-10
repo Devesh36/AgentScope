@@ -13,6 +13,7 @@ FastAPI `/docs` and `/openapi.json` describe the complete live schema. API keys 
 | Investigations | `GET /api/v1/investigations`, `GET /api/v1/investigations/{id}` |
 | Remediation (dashboard admin) | `POST /api/v1/remediations/{id}/approve`, `POST /api/v1/remediations/{id}/execute` |
 | Metrics | `GET /api/v1/metrics/overview`, `GET /metrics` (admin) |
+| Local watch | `PUT /api/v1/agents/{agent_id}/watch` (admin, project-scoped heartbeat) |
 | Live refresh | `GET /api/v1/events` |
 | Settings | `GET /api/v1/settings`, `PUT /api/v1/settings`, `GET /api/v1/settings/provider-status` |
 | API keys (dashboard admin) | `GET /api/v1/api-keys`, `POST /api/v1/api-keys`, `DELETE /api/v1/api-keys/{id}` |

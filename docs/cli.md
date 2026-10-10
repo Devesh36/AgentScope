@@ -1,8 +1,21 @@
 # Install and explore AgentScope
 
-The CLI connects to an **existing server**. It does not launch containers or bundle
-the dashboard. The Next.js landing page is `/`; the authenticated overview is
-`/dashboard`. Other dashboard URLs are unchanged.
+The CLI starts a local monitoring workspace with **watch**, or connects to an existing server with **repl**. The public landing page is `/`; the overview is `/dashboard`.
+
+## Monitor your project
+
+```bash
+cd /path/to/your/project
+agentscope watch -- python app.py
+# Node.js:
+agentscope watch -- npm start
+```
+
+The dashboard opens automatically with the correct project selected. The first run prepares the bundled API and Next.js dashboard; Node.js 24 with npm, uv, and Python 3.12+ are required on macOS/Linux. No project source files are modified.
+
+For a watcher independent of your application, run `agentscope watch`, then `agentscope run -- YOUR_COMMAND` from a second terminal in the same directory. In the REPL, `watch` or `monitor .` starts background monitoring; `stop` ends it. Help and existing server commands remain available.
+
+See [the watch guide](watch.md) for exact provider coverage, streams, storage, shutdown, and grounding evaluation support.
 
 ## uv
 
@@ -19,14 +32,13 @@ Agenscope Repl
 
 This installs `agentscope-cli` from this repository, not from PyPI. In a checkout,
 use `uv tool install .`. For a reproducible snapshot, replace the branch after `@`
-with the full source commit in `Formula/agentscope.rb`. If uv reports its tool bin
-directory is missing from PATH, follow its shell setup instructions. The existing
-`agentscope-sdk` remains a separate package for agent instrumentation.
+with the release tag `v0.3.0` or a full source commit. If uv reports its tool bin
+directory is missing from PATH, follow its shell setup instructions. The Python SDK is supplied to applications launched through watch/run; it is also installable separately for manual integration.
 
 ## Homebrew
 
 Requires [Homebrew](https://brew.sh/) on macOS or Linux. This custom tap uses the
-AgentScope repository, not Homebrew core. The formula pins its source commit; Python 3.12 is installed as a dependency.
+AgentScope repository, not Homebrew core. The formula uses the v0.3.0 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
 
 ```bash
 brew tap Devesh36/agentscope https://github.com/Devesh36/AgentScope.git
@@ -35,9 +47,8 @@ brew test Devesh36/agentscope/agentscope
 agentscope repl
 ```
 
-The tap follows the repository's default branch. The formula pins a tested source
-commit; it may lag the CLI available from main. Update with `brew update && brew upgrade Devesh36/agentscope/agentscope`.
-Only the client is installed; credentials and databases are never bundled.
+The tap follows the repository's default branch. The formula uses a versioned source tag; development changes may reach main before the next tagged release. Update with `brew update && brew upgrade Devesh36/agentscope/agentscope`.
+The CLI includes local service sources. Service dependencies are prepared on first watch; credentials and databases are created locally.
 
 ## Connect
 

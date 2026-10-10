@@ -98,7 +98,7 @@ def ingest(db, project_id, events, synthetic=False):
             ):
                 setattr(span, field, getattr(event, field))
             span.attributes = {**event.attributes, "synthetic": synthetic}
-            if event.kind == "llm" and event.model in PRICING:
+            if event.kind == "llm" and event.model in PRICING and event.attributes.get("usage_observed") is not False:
                 ip, op = PRICING[event.model]
                 span.cost = (
                     event.input_tokens * ip + event.output_tokens * op

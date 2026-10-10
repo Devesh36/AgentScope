@@ -25,3 +25,11 @@ in plain language; never publish private chat text, credentials, or local data.
 
 Check both app typechecks, the standalone landing export verification, and the
 landing browser tests after changing the timeline or public navigation.
+
+## Watch runtime releases
+
+The CLI bundles API, SDK, and dashboard sources into its wheel. When those bundled
+sources change, bump the CLI version so prepared user runtimes are refreshed.
+Keep the Homebrew formula's source tag aligned with that version. Validate wheel
+and source-archive builds, first-run service setup, and `npm run accept:watch --
+--browser` for changes to onboarding or automatic runtime capture.

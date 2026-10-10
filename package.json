@@ -10,6 +10,7 @@
     "test:api": "cd apps/api && ../../.venv/bin/pytest -q",
     "accept:containers": ".venv/bin/python scripts/container_acceptance.py run",
     "test:cli": ".venv/bin/pytest packages/cli/tests -q",
-    "accept:cli": ".venv/bin/python scripts/cli_acceptance.py"
+    "accept:cli": ".venv/bin/python scripts/cli_acceptance.py",
+    "accept:watch": ".venv/bin/python scripts/watch_acceptance.py"
   }
 }

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -50,6 +51,17 @@ class AgentUpdate(BaseModel):
         return validate_configuration(value)
 
 
+class WatchUpdate(BaseModel):
+    session_id: UUID
+    repository: str = Field(min_length=1, max_length=120)
+    status: Literal["waiting", "monitoring", "stopped"]
+
+
+class GroundingEvaluation(BaseModel):
+    unsupported_claims: int = Field(ge=0, le=1_000_000, strict=True)
+    evaluator: str = Field(min_length=1, max_length=100)
+
+
 class SpanEvent(BaseModel):
     event_id: str = Field(min_length=1, max_length=128)
     agent_id: str
@@ -70,6 +82,13 @@ class SpanEvent(BaseModel):
     attributes: dict = Field(default_factory=dict)
     error: str | None = Field(default=None, max_length=2000)
     run_name: str = Field(default="Agent execution", max_length=200)
+
+    @field_validator("attributes")
+    @classmethod
+    def grounding_evaluation(cls, value):
+        if "grounding" in value:
+            GroundingEvaluation.model_validate(value["grounding"])
+        return value
 
     @field_validator("started_at", "ended_at")
     @classmethod

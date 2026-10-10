@@ -151,9 +151,10 @@ function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (projects.length && !projects.some((p) => p.id === project)) {
       const saved = localStorage.getItem("agentscope-project");
-      setProjectState(
-        projects.some((p) => p.id === saved) ? saved! : projects[0].id,
-      );
+      const requested = new URLSearchParams(window.location.search).get("project");
+      const selected = projects.some((p) => p.id === requested) ? requested! : projects.some((p) => p.id === saved) ? saved! : projects[0].id;
+      setProjectState(selected);
+      localStorage.setItem("agentscope-project", selected);
     }
   }, [projects, project]);
   useEffect(() => {

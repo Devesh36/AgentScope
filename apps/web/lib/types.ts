@@ -145,6 +145,11 @@ export type Span = {
   attributes: Record<string, unknown>;
 };
 export type Metrics = {
+  llm_calls: number;
+  llm_errors: number;
+  grounding_evaluations: number;
+  unsupported_claims: number | null;
+  watch_sessions: { agent_id: string; repository: string; status: string; heartbeat_at: string | null }[];
   registered_agents: number;
   active_runs: number;
   completed_runs: number;

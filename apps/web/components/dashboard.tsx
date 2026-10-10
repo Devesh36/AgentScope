@@ -129,6 +129,13 @@ function Overview() {
             {!!data.synthetic_runs && (
               <DemoNotice count={data.synthetic_runs} />
             )}
+            {!!data.watch_sessions?.length && (
+              <Panel title="Local project monitoring" subtitle="Runtime telemetry from applications launched with AgentScope">
+                <div className="watch-sessions">
+                  {data.watch_sessions.map((session) => <div className="watch-session" key={session.agent_id}><span className={`status-dot ${session.status === "monitoring" || session.status === "waiting" ? "green" : "amber"}`} /><div><strong>{session.repository}</strong><p>{session.status === "monitoring" ? "Application running · capturing supported LLM calls" : session.status === "waiting" ? "Waiting for activity · launch your app with agentscope run" : session.status === "stopped" ? "Watch stopped · recorded activity is preserved" : "Watch disconnected · restart agentscope watch"}</p></div><code>{session.status}</code></div>)}
+                </div>
+              </Panel>
+            )}
             <div className="overview-status">
               <div>
                 <span
@@ -193,10 +200,12 @@ function Overview() {
                   money(data.cost),
                   CircleDollarSign,
                   data.cost == null
-                    ? "No priced model usage"
+                    ? data.llm_calls ? "Pricing or usage is incomplete" : "No observed model usage"
                     : "Recorded model list pricing",
                   "neutral",
                 ],
+                ["LLM calls", number(data.llm_calls ?? 0), Sparkles, `${number(data.llm_errors ?? 0)} failed calls`, "neutral"],
+                ["Unsupported claims", data.unsupported_claims == null ? "Not evaluated" : number(data.unsupported_claims), ShieldAlert, data.grounding_evaluations ? `${number(data.grounding_evaluations)} application grounding checks` : "Requires reference-based evaluation", "neutral"],
               ].map(([title, value, Icon, note, color]) => {
                 const I = Icon as typeof Bot;
                 return (
@@ -205,7 +214,7 @@ function Overview() {
                       {String(title)}
                       <I size={15} />
                     </div>
-                    <div className={`metric-value text-${color}`}>
+                    <div className={`metric-value text-${color} ${value === "Not evaluated" || value === "Unavailable" ? "metric-value-label" : ""}`}>
                       {String(value)}
                     </div>
                     <div className="metric-note">{String(note)}</div>

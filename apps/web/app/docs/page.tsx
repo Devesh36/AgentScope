@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 const repository = "https://github.com/Devesh36/AgentScope";
 const sections = [
   ["overview", "What is AgentScope?"],
+  ["watch", "Monitor your project"],
   ["quickstart", "Run locally"],
   ["cli", "Connect the CLI"],
   ["demo", "Your first investigation"],
@@ -57,6 +58,30 @@ export default function DocumentationPage() {
             <div className="docs-note"><strong>You stay in control.</strong><p>Real-agent remediation is recommendation-only. Executable actions are limited to an isolated synthetic demo adapter, require an enabled demo policy, and keep approval separate from execution.</p></div>
           </section>
 
+          <section id="watch" className="docs-section">
+            <span className="docs-section-number">START HERE / LOCAL MONITORING</span><h2>Monitor your existing project</h2>
+            <p>Install AgentScope, run it from your application directory, and open a live local dashboard. On macOS or Linux, you need Python 3.12+, Node.js 24 with npm, and uv. Homebrew installation supplies these prerequisites.</p>
+            <DocCode title="Watch a Python project">{`uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"
+cd /path/to/your/project
+agentscope watch -- python app.py`}</DocCode>
+            <DocCode title="Watch a Node.js project">{`agentscope watch -- npm start`}</DocCode>
+            <p>Activate your Python virtual environment first. AgentScope prepares its bundled services on first use, creates a project and private ingestion key, and opens the dashboard with your project selected. Live LLM activity, failures, usage, and detected incidents appear as the application runs.</p>
+            <h3>Keep monitoring in the REPL</h3>
+            <DocCode title="Start interactive monitoring">{`agentscope repl
+# Inside the REPL:
+watch
+status
+incidents
+open
+# Stop the local services:
+stop`}</DocCode>
+            <p><code>watch</code> also accepts a directory, and <code>monitor .</code> is an alias. Monitoring continues in the background while you inspect the workspace. Start your application from another terminal in the same directory:</p>
+            <DocCode title="Launch into a running watcher">{`agentscope run -- python app.py`}</DocCode>
+            <div className="docs-note"><strong>What automatic monitoring captures</strong><p>Python OpenAI chat completions, Responses, and Anthropic Messages create calls, including async and streamed calls; Node.js fetch-based OpenAI/Anthropic-compatible endpoints. Applications must be launched through watch/run. Tool and whole-agent boundaries, unsupported providers, and other languages use SDK or OTLP instrumentation.</p></div>
+            <p>Automatic telemetry includes metadata and excludes prompts, generated content, and provider credentials. Unsupported claims remain <strong>Not evaluated</strong> until your application supplies reference-based grounding checks. Missing usage keeps cost unavailable.</p>
+            <p>Ctrl+C stops CLI watch services; <code>stop</code> or <code>exit</code> stops a REPL watcher. Recorded activity lives outside your project in your private user workspace and is restored on the next watch. Read the <a href={`${repository}/blob/main/docs/watch.md`}>full watch guide</a> for options and integration details.</p>
+          </section>
+
           <section id="quickstart" className="docs-section">
             <span className="docs-section-number">02 / LOCAL WORKSPACE</span><h2>Run AgentScope locally</h2>
             <p>Install Python 3.12+, Node.js 24 with npm, Git, and <a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>. Native development uses SQLite and a deterministic investigator; Docker, Redis, and model credentials are optional.</p>
@@ -76,7 +101,7 @@ npm run dev`}</DocCode>
   --url http://127.0.0.1:8000 \\
   --dashboard http://127.0.0.1:3000 \\
   --token-file .local/admin-token`}</DocCode>
-            <p>To install the client independently, use uv. This installs the CLI from source and does not start or bundle a server.</p>
+            <p>The same CLI can monitor a local project with watch or connect to an existing server. Install it with uv:</p>
             <DocCode title="Install the standalone CLI">{`uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"
 agentscope --version
 agentscope repl --token-file /path/to/server/admin-token`}</DocCode>
@@ -140,7 +165,7 @@ with AgentScope(
 
           <section id="troubleshooting" className="docs-section">
             <span className="docs-section-number">07 / COMMON QUESTIONS</span><h2>Get back to a working setup</h2>
-            <details open><summary>The CLI cannot connect</summary><p>Keep <code>npm run dev</code> running. Check that the API URL matches port 8000, then request <code>/health/ready</code>. The CLI does not launch the server.</p><DocCode title="Check API readiness">{`curl --fail http://127.0.0.1:8000/health/ready`}</DocCode></details>
+            <details open><summary>The CLI cannot connect</summary><p>Keep <code>npm run dev</code> running. Check that the API URL matches port 8000, then request <code>/health/ready</code>. For an existing server, keep it running. For automatic local startup, use watch.</p><DocCode title="Check API readiness">{`curl --fail http://127.0.0.1:8000/health/ready`}</DocCode></details>
             <details><summary>Authentication fails</summary><p>Use the admin token file from the server you are connecting to. A project API key cannot administer the CLI workspace. For SDK ingestion, use an active key from the intended project.</p></details>
             <details><summary>The dashboard is empty</summary><p>A fresh workspace has no runs. Select the correct project and instrument an agent, or explicitly run the synthetic demo. Check live/demo filters if records are hidden.</p></details>
             <details><summary>A proposal cannot execute</summary><p>Only the isolated synthetic adapter can execute actions. Enable demo control for the selected project, approve the proposal, then execute it separately. Real-agent recommendations remain advisory.</p></details>

@@ -1,0 +1,12 @@
+include setup.py
+include apps/api/alembic.ini apps/api/requirements.txt
+recursive-include apps/api/app *.py
+recursive-include apps/api/alembic *.py
+include apps/web/package.json apps/web/package-lock.json apps/web/tsconfig.json
+include apps/web/next-env.d.ts apps/web/next.config.ts apps/web/postcss.config.mjs apps/web/proxy.ts
+recursive-include apps/web/app *.ts *.tsx *.css *.svg
+recursive-include apps/web/components *.ts *.tsx
+recursive-include apps/web/lib *.ts *.json
+recursive-include apps/web/public *.png *.svg
+recursive-include packages/python-sdk/agentscope_sdk *.py
+recursive-include packages/cli/agentscope_cli/hooks *.py *.cjs
