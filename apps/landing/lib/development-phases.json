@@ -1,0 +1,129 @@
+{
+  "phases": [
+    {
+      "id": "foundation",
+      "title": "The observability foundation",
+      "summary": "The starting workspace connected agent telemetry to traces, incident detection, evidence-based investigation, and a dashboard."
+    },
+    {
+      "id": "containers",
+      "title": "A reproducible local stack",
+      "summary": "Container setup made the workspace repeatable, with authenticated access, health checks, durable storage, and measured acceptance results."
+    },
+    {
+      "id": "cli",
+      "title": "AgentScope in your terminal",
+      "summary": "An installable REPL brought investigation into the terminal. Homebrew packaging and portable command aliases made installation more consistent."
+    },
+    {
+      "id": "deployment",
+      "title": "An independent public site",
+      "summary": "The landing page became a standalone static site that can deploy to Vercel without the API, database, or dashboard credentials."
+    },
+    {
+      "id": "design",
+      "title": "A lighter product experience",
+      "summary": "The public pages adopted an ivory and amber palette, clearer spacing, and responsive layouts for desktop and mobile."
+    },
+    {
+      "id": "documentation",
+      "title": "A practical getting-started guide",
+      "summary": "A professional README and public documentation explain the product, local setup, CLI, SDK, and investigation workflow with real terminal captures."
+    },
+    {
+      "id": "history",
+      "title": "A visible development history",
+      "summary": "The Phase section connects each development step to its date, purpose, and source commit, making the evolution of AgentScope easy to follow."
+    }
+  ],
+  "commits": [
+    {
+      "sha": "89356caba95c89b6b1efefebacd19e568adaac67",
+      "date": "2026-10-09",
+      "subject": "chore: preserve existing AgentScope application baseline",
+      "phase": "foundation",
+      "title": "Preserved the application baseline",
+      "summary": "Established the FastAPI API, Python SDK, telemetry storage, incident workflows, and Next.js dashboard."
+    },
+    {
+      "sha": "a342698e19dbc5a8735fd0ff638f0590d1987208",
+      "date": "2026-10-09",
+      "subject": "feat: verify a secure reproducible local container stack",
+      "phase": "containers",
+      "title": "Verified the local container stack",
+      "summary": "Added authenticated container startup, migrations, readiness checks, restart persistence, and an end-to-end acceptance runner."
+    },
+    {
+      "sha": "306c2123e90b662edbc98a788f668823c153bb43",
+      "date": "2026-10-09",
+      "subject": "docs: record measured local container acceptance results",
+      "phase": "containers",
+      "title": "Published container acceptance results",
+      "summary": "Recorded measured local checks and their limitations so the setup can be reviewed and reproduced."
+    },
+    {
+      "sha": "ed613783861967ca3b5003d170cf0bb3172acf8a",
+      "date": "2026-10-09",
+      "subject": "Add installable AgentScope REPL and Next.js product landing page",
+      "phase": "cli",
+      "title": "Added the CLI and product landing page",
+      "summary": "Introduced an installable interactive REPL and a public homepage with installation commands and a product walkthrough."
+    },
+    {
+      "sha": "d40acca079e53eda464ed1a2465f9659725aa764",
+      "date": "2026-10-09",
+      "subject": "Add pinned Homebrew formula and measured CLI landing validation",
+      "phase": "cli",
+      "title": "Added pinned Homebrew installation",
+      "summary": "Published the Homebrew formula and recorded CLI and landing-page validation results."
+    },
+    {
+      "sha": "2504ce87caa2bbd014aa3ab9ee35b0caedc374cf",
+      "date": "2026-10-09",
+      "subject": "Avoid case-insensitive filesystem collisions in CLI aliases",
+      "phase": "cli",
+      "title": "Fixed command alias portability",
+      "summary": "Removed CLI aliases that collide on case-insensitive filesystems, improving installation portability."
+    },
+    {
+      "sha": "8638821efb109feb7ee43fa4091f057a6f09b505",
+      "date": "2026-10-09",
+      "subject": "Pin portable Homebrew commands and record source installation checks",
+      "phase": "cli",
+      "title": "Verified portable installation commands",
+      "summary": "Pinned the Homebrew commands to tested source and documented source-installation checks."
+    },
+    {
+      "sha": "4ba5b19fe0fcd4f655fbaf402a15edae5892d9ab",
+      "date": "2026-10-09",
+      "subject": "Isolate landing page as static Next.js site for Vercel",
+      "phase": "deployment",
+      "title": "Separated the static landing site",
+      "summary": "Created apps/landing with its own export checks and Vercel configuration, independent of dashboard routes."
+    },
+    {
+      "sha": "e9f07f8afc4d8fe630cc57733c7eef295999da07",
+      "date": "2026-10-10",
+      "subject": "Refresh AgentScope landing pages with a light amber theme",
+      "phase": "design",
+      "title": "Introduced the light amber design",
+      "summary": "Refreshed both landing pages with ivory backgrounds, amber accents, clearer cards, and mobile layouts."
+    },
+    {
+      "sha": "768b576e6c1e6b70dc26854db4c58c14ff1377c6",
+      "date": "2026-10-10",
+      "subject": "Add public product documentation and professional getting-started README",
+      "phase": "documentation",
+      "title": "Published product documentation",
+      "summary": "Rewrote the README and added public /docs pages with copyable examples, troubleshooting, and two captured CLI screenshots."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-10",
+      "subject": "Add dated development phases to the landing page",
+      "phase": "history",
+      "title": "Added the Phase timeline",
+      "summary": "Added a navigation link, dated development phases, commit links, automatic inclusion of new commits at build time, and guidance for recording future changes."
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Activity, ArrowDown, ArrowRight, Check, ChevronRight, GitBranch, Code2, LockKeyhole, Radar, ShieldCheck, Terminal, Waypoints } from "lucide-react";
 import { InstallCommand } from "@/components/install-command";
+import { DevelopmentPhases } from "@/components/development-phases";
 import "./landing.css";
 
 const repository = "https://github.com/Devesh36/AgentScope";
@@ -11,7 +12,7 @@ export default function LandingPage() {
       <a className="landing-skip" href="#product">Skip to content</a>
       <header className="landing-nav">
         <Link href="/" className="landing-brand" aria-label="AgentScope home"><span><Activity size={21} /></span>AgentScope</Link>
-        <nav aria-label="Site navigation"><a href="#product">Product</a><a href="#workflow">How it works</a><a href="#install">Install</a><Link href="/docs">Docs</Link></nav>
+        <nav aria-label="Site navigation"><a href="#product">Product</a><a href="#workflow">How it works</a><a href="#install">Install</a><Link href="/docs">Docs</Link><a href="#phase">Phase</a></nav>
         <Link href="/dashboard" className="landing-nav-cta">Open dashboard <ArrowRight size={15} /></Link>
       </header>
 
@@ -52,6 +53,8 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-install-section" id="install"><div><span className="landing-kicker">YOUR TERMINAL. YOUR WORKSPACE.</span><h2>Start seeing clearly.</h2><p>Install the CLI with uv or Homebrew, then connect to an existing AgentScope server. The SDK and local server are available in the repository.</p><a className="landing-text-link" href="/docs">Read the setup and demo guide <ArrowRight size={15} /></a></div><div><InstallCommand /><div className="landing-next-step"><span>Then open the REPL</span><code>agentscope repl</code><span>Also accepts <code>Agenscope Repl</code>. Set your server URL and admin token file using the setup guide.</span></div></div></section>
+
+      <DevelopmentPhases />
 
       <footer className="landing-footer"><Link className="landing-brand" href="/"><span><Activity size={18} /></span>AgentScope</Link><span>Observe. Understand. Verify.</span><a href={repository}><Code2 size={16} /> Source on GitHub <ArrowRight size={13} /></a></footer>
     </main>

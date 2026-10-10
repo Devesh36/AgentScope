@@ -11,6 +11,13 @@ test("public landing page works offline, installation tabs copy commands, mobile
   expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "Your agents run. Know what happens." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open dashboard" })).toHaveAttribute("href", "/dashboard");
+  await page.getByRole("navigation", { name: "Site navigation" }).getByRole("link", { name: "Phase", exact: true }).click();
+  await expect(page).toHaveURL(/#phase$/);
+  const history = page.getByRole("region", { name: "Phase", exact: true });
+  await expect(history.getByRole("heading", { name: "A visible development history" })).toBeVisible();
+  await expect(history.getByRole("link", { name: /^View commit 89356ca:/ })).toHaveAttribute("href", "https://github.com/Devesh36/AgentScope/commit/89356caba95c89b6b1efefebacd19e568adaac67");
+  await expect(history.getByText("Published product documentation", { exact: true })).toBeVisible();
+  await expect(history.locator('time[datetime="2026-10-09"]').first()).toHaveText("9 Oct 2026");
   await page.getByRole("link", { name: "Get AgentScope" }).click();
   await expect(page.getByRole("tab", { name: "uv", exact: true })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "Copy install command" }).click();
@@ -23,6 +30,7 @@ test("public landing page works offline, installation tabs copy commands, mobile
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Open dashboard" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Site navigation" }).getByRole("link", { name: "Phase", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   expect(apiCalls).toEqual([]);
   expect(errors).toEqual([]);

@@ -176,6 +176,8 @@ npm --prefix apps/landing run typecheck
 npm --prefix apps/landing run verify
 ```
 
+The homepage’s **Phase** section records dated development milestones and every source commit. Its build merges Git history with a curated snapshot, preserving older milestones in shallow or Git-free builds. See [the timeline maintenance guide](docs/development-phases.md) when making changes.
+
 For Vercel, use **apps/landing** as the Root Directory and **main** as the production branch. See [the deployment guide](apps/landing/README.md). The dashboard remains in `apps/web`; it is a separate application.
 
 ## Documentation

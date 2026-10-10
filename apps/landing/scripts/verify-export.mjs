@@ -9,6 +9,12 @@ assert(Object.keys(manifest).every((route) => allowed.has(route)), "Landing buil
 const html = await readFile(resolve(app, "out/index.html"), "utf8");
 assert(html.includes("Your agents run."), "Landing page was not exported");
 assert(html.includes('href="/docs"'), "Landing page does not link to documentation");
+assert(html.includes('href="#phase"') && html.includes('id="phase"'), "Landing page does not include the Phase navigation and timeline");
+const history = JSON.parse(await readFile(resolve(app, "lib/development-phases.json"), "utf8"));
+for (const change of history.commits) {
+  assert(html.includes(change.title), `Development history omits: ${change.title}`);
+  if (change.sha) assert(html.includes(`/commit/${change.sha}`), "Development history omits a source commit link");
+}
 const documentation = await readFile(resolve(app, "out/docs.html"), "utf8");
 assert(documentation.includes("What is AgentScope?"), "Documentation page was not exported");
 for (const screenshot of ["cli-start", "cli-demo"]) {

@@ -184,3 +184,49 @@ body:has(.landing) { background: #fffcf7; color-scheme: light; }
   .landing-footer>a:last-child { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { .landing a, .landing button { transition: none; } }
+
+.landing-phase-section { padding: 88px var(--landing-gutter); background: #fffdf9; border-bottom: 1px solid var(--landing-line); }
+.landing-phase-intro { display: flex; align-items: end; justify-content: space-between; gap: 32px; }
+.landing-phase-intro h2 { font-size: clamp(36px, 4vw, 48px); font-weight: 600; line-height: 1.15; letter-spacing: -1.8px; margin: 16px 0; }
+.landing-phase-intro p { max-width: 570px; color: var(--landing-muted); margin: 0; }
+.landing-phase-intro>a { flex-shrink: 0; }
+.landing-phase-caption { display: flex; justify-content: space-between; gap: 16px; padding: 24px 0 18px; margin-top: 24px; border-top: 1px solid var(--landing-line); font-size: 11px; color: var(--landing-muted); }
+.landing-phase-timeline, .landing-phase-changes { list-style: none; padding: 0; margin: 0; }
+.landing-phase-item { position: relative; display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 24px; padding-bottom: 24px; }
+.landing-phase-item:not(:last-child)::before { content: ""; position: absolute; left: 23px; top: 48px; bottom: 0; width: 1px; background: #e8d9bd; }
+.landing-phase-number { position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid #e8d9bd; border-radius: 50%; background: #fff7e7; color: #976000; font-size: 13px; font-weight: 650; }
+.landing-phase-item:first-child .landing-phase-number { background: #ffcf72; border-color: #eeb84c; color: #684300; }
+.landing-phase-card { min-width: 0; padding: 28px 32px; background: white; border: 1px solid var(--landing-line); border-radius: 14px; }
+.landing-phase-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.landing-phase-header .landing-kicker { font-size: 10px; }
+.landing-phase-latest { border: 1px solid #ecd5a5; border-radius: 20px; padding: 3px 9px; font-size: 9px; letter-spacing: .6px; font-weight: 600; color: #835000; background: #fff6e3; }
+.landing-phase-card h3 { font-size: 23px; font-weight: 600; letter-spacing: -.6px; margin: 12px 0 8px; line-height: 1.35; }
+.landing-phase-card>p { color: var(--landing-muted); margin: 0 0 24px; max-width: 820px; font-size: 14px; }
+.landing-phase-changes { border-top: 1px solid var(--landing-line); }
+.landing-phase-changes>li { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 24px; padding-top: 18px; }
+.landing-phase-change-date { display: flex; flex-direction: column; align-items: start; gap: 6px; color: #756b5b; font-size: 11px; }
+.landing-phase-change-date a { display: inline-flex; gap: 6px; align-items: center; color: #8a5700; min-height: 26px; }
+.landing-phase-change-date a:hover { color: #573600; text-decoration: underline; }
+.landing-phase-change-date>span { color: #956000; font-size: 10px; }
+.landing-phase-changes h4 { font-size: 13px; font-weight: 600; margin: 0 0 5px; line-height: 1.5; overflow-wrap: anywhere; }
+.landing-phase-changes p { font-size: 12px; color: var(--landing-muted); margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 800px) {
+  .landing-phase-section { padding-block: 60px; }
+  .landing-phase-intro { flex-direction: column; align-items: start; gap: 20px; }
+  .landing-phase-card { padding: 24px; }
+  .landing-nav nav { gap: 20px; }
+}
+@media (max-width: 540px) {
+  .landing-nav nav { flex-wrap: wrap; gap: 12px 20px; }
+  .landing-phase-section { padding-block: 48px; }
+  .landing-phase-intro h2 { font-size: 36px; }
+  .landing-phase-caption { font-size: 10px; }
+  .landing-phase-item { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding-bottom: 18px; }
+  .landing-phase-number { width: 28px; height: 28px; font-size: 10px; }
+  .landing-phase-item:not(:last-child)::before { left: 13px; top: 28px; }
+  .landing-phase-card { padding: 18px 16px; border-radius: 10px; }
+  .landing-phase-card h3 { font-size: 20px; }
+  .landing-phase-card>p { font-size: 13px; margin-bottom: 18px; }
+  .landing-phase-changes>li { grid-template-columns: 1fr; gap: 8px; }
+  .landing-phase-change-date { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+}
