@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync } from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 export function proxy(request: NextRequest) {
-  // Only the marketing home page is public; workspace and API routes stay protected.
-  if (request.nextUrl.pathname === '/') return NextResponse.next();
+  // Public product documentation and its screenshots do not expose workspace data.
+  const pathname = request.nextUrl.pathname;
+  if (pathname === '/' || pathname === '/docs' || pathname === '/docs/' || /^\/docs-assets\/(cli-start|cli-demo)\.png$/.test(pathname)) return NextResponse.next();
   let password = process.env.DASHBOARD_PASSWORD;
   if (process.env.DASHBOARD_PASSWORD_FILE) {
     try {

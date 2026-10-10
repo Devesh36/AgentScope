@@ -10,7 +10,7 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.12+. uv can download a su
 Python interpreter if necessary.
 
 ```bash
-uv tool install "git+https://github.com/Devesh36/AgentScope.git@feat/local-container-acceptance"
+uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"
 agentscope --version
 agentscope repl
 # Supported alias matching the requested spelling:
@@ -35,8 +35,8 @@ brew test Devesh36/agentscope/agentscope
 agentscope repl
 ```
 
-The tap follows the repository's default branch, which currently contains this
-feature branch. Update with `brew update && brew upgrade Devesh36/agentscope/agentscope`.
+The tap follows the repository's default branch. The formula pins a tested source
+commit; it may lag the CLI available from main. Update with `brew update && brew upgrade Devesh36/agentscope/agentscope`.
 Only the client is installed; credentials and databases are never bundled.
 
 ## Connect

@@ -12,6 +12,7 @@ WORKDIR /app/apps/web
 RUN groupadd --gid 10001 agentscope && useradd --uid 10001 --gid 10001 --no-create-home agentscope
 COPY --from=build --chown=10001:10001 --chmod=755 /app/apps/web/.next/standalone ./
 COPY --from=build --chown=10001:10001 --chmod=755 /app/apps/web/.next/static ./.next/static
+COPY --from=build --chown=10001:10001 --chmod=755 /app/apps/web/public ./public
 COPY --chown=10001:10001 --chmod=755 infrastructure/docker/web_*.mjs /app/
 ENV HOSTNAME=0.0.0.0 PORT=3000 NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production AGENTSCOPE_CONTAINER=1
 USER 10001:10001

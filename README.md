@@ -1,129 +1,189 @@
 # AgentScope
 
-Agent observability and evidence-grounded incident response. A dark-first Next.js dashboard backed by authenticated FastAPI APIs and persistent telemetry—not a static prototype.
+**Understand your agents, from execution to recovery.**
 
-## Run locally
+AgentScope is a self-hosted observability workspace for AI agents. It brings together execution traces, tool calls, model usage, incident detection, and evidence-grounded investigations so you can understand what happened and decide what to do next.
 
-To publish **only the landing page** on Vercel, select Root Directory
-**apps/landing**. It exports a static Next.js site and needs no server secrets.
-See the [Vercel import settings and local checks](apps/landing/README.md).
+The local workflow runs without a model API key. Start the server, connect the Python SDK or interactive CLI, and inspect the same persisted records in the dashboard.
 
-The Next.js landing page is at `/`; the observability workspace starts at
-`/dashboard`. Install the interactive client with uv or Homebrew and run
-`agentscope repl` (also accepts `Agenscope Repl`). See the
-[CLI installation and demo guide](docs/cli.md). The REPL connects to an existing
-server; `demo` creates labeled synthetic telemetry and a persisted investigation.
-Approval and execution remain separate explicit commands.
+[Getting started](#getting-started) · [CLI guide](docs/cli.md) · [API reference](docs/api.md) · [Container guide](docs/local-containers.md) · [Development](#development)
 
-Requires Python 3.12+, Node.js 22+, and [uv](https://docs.astral.sh/uv/).
+## What AgentScope does
+
+| Capability | How it helps |
+| --- | --- |
+| Execution visibility | Inspect nested agent, tool, and LLM spans, latency, failures, observed token usage, and estimated cost for supported models. |
+| Incident detection | Identify repeated tool calls, token-budget overruns, tool failure storms, stalled executions, and unexpected workflow steps. |
+| Evidence-grounded investigation | Review persisted findings, competing hypotheses, recommendations, and references to the spans behind them. |
+| Controlled demo intervention | Approve a proposal, execute it separately, and verify recovery against recorded follow-up telemetry. |
+| Project-scoped telemetry | Create and revoke ingestion API keys, separate live runs from synthetic demos, and configure detectors and retention. |
+| Multiple interfaces | Use the Next.js dashboard, interactive Python CLI, Python SDK, or authenticated REST and OTLP ingestion APIs. |
+
+**Real agents remain recommendation-only.** Executable remediation is limited to an explicitly enabled, isolated synthetic demo adapter. A successful action response alone does not establish recovery.
+
+## Getting started
+
+### Prerequisites
+
+- Python **3.12+**
+- Node.js **24.x** and npm, matching the CI toolchain
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Git
+
+Docker, PostgreSQL, Redis, and external model credentials are not required for native development.
+
+### Run the local workspace
 
 ```bash
+git clone --branch main https://github.com/Devesh36/AgentScope.git
+cd AgentScope
 npm run setup
 npm run dev
 ```
 
-The dashboard listens on port **3000** and the API on **8000**. The default local mode uses SQLite with WAL, a durable transactional database outbox, and a bounded deterministic LangGraph investigator. It requires no model credentials, Redis, or external agent services. PostgreSQL is supported through `DATABASE_URL` and Alembic migrations.
+Setup creates a Python virtual environment, installs the API, SDK, and CLI, installs locked web dependencies, and runs database migrations. Keep the development process running while using the dashboard or CLI.
 
-**A new workspace starts empty.** Use Settings → API keys to create a project key, register an agent, and emit actual telemetry. Simulation lab explicitly generates **synthetic demo telemetry**; demo agents, runs, and investigation reports are labeled throughout. Overview and Run explorer can filter live telemetry and demo data separately. Simulations are never started automatically.
+| Interface | Local address |
+| --- | --- |
+| Landing page | `http://localhost:3000` |
+| Product documentation | `http://localhost:3000/docs` |
+| Dashboard | `http://localhost:3000/dashboard` |
+| API | `http://127.0.0.1:8000` |
+| Interactive API schema | `http://127.0.0.1:8000/docs` |
 
-### What is implemented
+A new workspace starts empty. In the dashboard, create a project and an API key in **Settings**, then instrument your agent. To explore first, use the explicitly labeled synthetic demo below.
 
-- Overview with query-backed agent/run/incident metrics, model-priced estimated cost, token charts, tool error trends, health, and investigations. Unknown pricing is displayed as unavailable.
-- Agent registration, configuration, health, recent runs and incidents.
-- Filterable and paginated run explorer with nested trace waterfall, tool timeline, LLM details, error events, token breakdown, and metadata.
-- Incident center with search, filtering, ordering, investigations, detection evidence, remediation history, and recovery results.
-- Persisted investigation workspace: evidence references, execution timelines, qualitative hypotheses, contradictory evidence, recommendations, and decision summaries. Hidden chain-of-thought is never requested or displayed.
-- Settings for projects, one-time API key creation/revocation, agent workflow constraints, five configurable detectors, model provider configuration, remediation policy, and enforced telemetry retention.
-- Reproducible simulation scenarios for tool loops, token budgets, tool failure storms, stalls, unexpected tools, and healthy execution.
-- All requested section-15 endpoints, JSON and protobuf OTLP trace ingestion, project authorization, batch validation, payload limits, ingestion deduplication, durable background processing, authenticated SSE, health checks, and Prometheus counters.
-- An installable metadata-first Python SDK with sync/async decorators, nested context, LLM usage recording, progress events, bounded export queues, retries, and graceful shutdown.
+### Connect the CLI
 
-## Instrument an agent
+From the repository root, open another terminal:
 
-The setup script installs the local SDK. API keys are shown once in Settings and only their digests are stored.
+```bash
+.venv/bin/agentscope repl \
+  --url http://127.0.0.1:8000 \
+  --dashboard http://127.0.0.1:3000 \
+  --token-file .local/admin-token
+```
+
+The CLI uses the server's admin token file. Project ingestion API keys are for the SDK and telemetry APIs; they do not replace this admin credential. Do not commit or share token files.
+
+To install the CLI separately with uv:
+
+```bash
+uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"
+agentscope --version
+agentscope repl --token-file /path/to/server/admin-token
+```
+
+The CLI connects to an existing server; installing it does not start the dashboard or database. Homebrew installation and connection options are covered in the [CLI guide](docs/cli.md).
+
+### Explore a synthetic incident
+
+In the REPL:
+
+```text
+help
+status
+demo
+```
+
+`demo` creates a dedicated project, records synthetic runs, detects a tool-loop incident, and waits for its investigation. It prints the recommendation, evidence count, and proposal ID. It does not approve or execute an action.
+
+![Captured AgentScope CLI session showing a synthetic tool-loop incident, completed investigation, eight evidence references, and a proposal awaiting approval.](apps/landing/public/docs-assets/cli-demo.png)
+
+*Captured from a local CLI session against the running API. IDs are specific to that session; use the IDs printed by your own run.*
+
+To practice the separate intervention steps, replace the placeholders with your proposal and investigation IDs:
+
+```text
+policy demo on
+approve REMEDIATION_ID
+execute REMEDIATION_ID
+verify INVESTIGATION_ID
+```
+
+Verification observes persisted follow-up runs after a 15-second window. Select the demo project in the dashboard to inspect the same traces, incident, and investigation. See the [CLI guide](docs/cli.md) for other scenarios and command details.
+
+## Instrument your Python agent
+
+The setup script installs the local `agentscope-sdk`. Create a project ingestion key in **Settings → API keys** and supply it through your application's secret configuration as `AGENTSCOPE_API_KEY`.
 
 ```python
+import os
 from agentscope_sdk import AgentScope
 
-scope = AgentScope(
-    endpoint="http://localhost:8000",
-    api_key="YOUR_PROJECT_API_KEY",
-    agent_name="research-agent",
-    framework="LangGraph",
-)
+with AgentScope(
+    endpoint="http://127.0.0.1:8000",
+    api_key=os.environ["AGENTSCOPE_API_KEY"],
+    agent_name="calculator-agent",
+) as scope:
 
-@scope.trace_tool
-async def search(query):
-    return await your_search(query)
+    @scope.trace_tool
+    def add(left, right):
+        return left + right
 
-@scope.trace_agent
-async def run_agent(task):
-    results = await search(task)
-    scope.heartbeat("search complete")
-    return results
+    @scope.trace_agent
+    def run():
+        total = add(2, 3)
+        scope.heartbeat("calculation complete")
+        return total
 
-# When instrumenting an actual LLM call, populate observed usage, never estimates:
-# with scope.llm("generate", model="gpt-4.1-mini") as usage:
-#     response = client.call(...)
-#     usage["input_tokens"] = response.usage.input_tokens
-#     usage["output_tokens"] = response.usage.output_tokens
-
-# Close on application shutdown; do not block an async event loop:
-# await asyncio.to_thread(scope.close)
+    print(run())
 ```
 
-Run the real local calculator example with `AGENTSCOPE_API_KEY` set securely:
+The SDK registers the agent and exports telemetry on a bounded background queue. It supports synchronous and asynchronous decorators, nested spans, progress events, retry deduplication, and graceful shutdown. Arguments and results are represented by fingerprints rather than raw payloads. Record actual model usage when instrumenting LLM calls; unknown model pricing remains unavailable.
+
+For a runnable async example, see [examples/demo-agent/main.py](examples/demo-agent/main.py). With the project API key configured securely, run `.venv/bin/python examples/demo-agent/main.py`.
+
+## Architecture and configuration
+
+AgentScope is a modular monolith: a **Next.js** dashboard proxies authenticated requests to a **FastAPI** API, while **SQLAlchemy** stores telemetry and a durable transactional outbox. The local worker processes detections and a bounded, deterministic **LangGraph** investigator.
+
+Native mode uses SQLite with WAL and stores data and the generated admin token in ignored `.local/`. Run one API worker in local mode. PostgreSQL is supported through `DATABASE_URL` and Alembic migrations.
+
+- Set `DASHBOARD_PASSWORD` before making the workspace available outside a trusted local environment. Use HTTPS and authenticated ingress for deployment.
+- Keep the admin token, ingestion API keys, and `.local/` private. Project API keys are stored as digests and can be revoked.
+- Optional OpenAI-compatible suggestions require a server-side provider key and an HTTPS destination allowlist. The deterministic investigator works independently, and model suggestions remain unverified.
+- The optional [container stack](docs/local-containers.md) uses PostgreSQL, pinned images, mounted secrets, readiness checks, and loopback-only published ports.
+
+The current release does not provide multi-user organization management, production RBAC, distributed worker coordination, or control adapters for real agents. External paid-provider behavior and production deployments require separate validation.
+
+## Development
+
+Use the existing repository scripts:
 
 ```bash
-.venv/bin/python examples/demo-agent/main.py
-```
-
-The SDK exports on a background thread. It records argument/result fingerprints and exception classes instead of raw arguments, prompts, responses, or exception text. A failed export cannot interrupt agent execution; counters distinguish exported, dropped, and failed exports. No paid model is used by the example.
-
-## API
-
-Interactive OpenAPI documentation is served by FastAPI at `/docs`. See [the API guide](docs/api.md) for authentication and event examples. SDK/project requests use `Authorization: Bearer <project-api-key>`. Dashboard administration uses a server-only token; it is never included in client JavaScript. `X-Project-ID` is required for dashboard project-scoped requests. Resource lookups enforce project ownership and keys cannot cross project boundaries.
-
-SSE at `/api/v1/events` announces project-scoped refreshes and always triggers a complete refresh after reconnect. Polling provides a fallback. Telemetry events and outbox entries share a database transaction. The local worker marks an outbox event processed in the same transaction as anomaly/incident creation. A restart retries unfinished work without duplicate incidents. **Run a single API worker in local mode.**
-
-## Investigations and remediation
-
-Deterministic detection and investigation work without an external model. The LangGraph workflow persists every checkpoint, limits graph execution to eight steps, and references stored spans. Optional OpenAI-compatible suggestions use a server-side `AGENTSCOPE_LLM_API_KEY`, an HTTPS destination allowlist, a ten-second timeout, and a 600-token output bound. Set `AGENTSCOPE_LLM_ALLOWED_HOSTS` to the intended provider hostname, enable the destination in your environment network policy, and select the provider in Settings. Invalid or unavailable output falls back to the deterministic report. Model suggestions remain **unverified**; deterministic findings remain primary. Live paid-provider access has not been validated.
-
-Real agents remain **recommendation-only**: telemetry does not confer control. This release registers only an isolated synthetic demo control adapter. To practice intervention, enable **Allow isolated demo control** in Settings → Remediation policies, approve a proposal, then execute it separately. The simulation adapter cancels its recorded demo execution and emits clearly labeled successful follow-up telemetry. Recovery is checked after a 15-second observation window against actual persisted follow-up runs. Approval, execution, and measurements are audited. An action response does not resolve an incident by itself.
-
-## Storage and security
-
-Local data and the generated dashboard token live in ignored `.local/`. Do not commit it. Set `DASHBOARD_PASSWORD` to protect dashboard pages and its privileged API proxy before exposing the web server beyond a trusted local environment. Use HTTPS and an authenticated ingress for deployment. The API binds to loopback in the development script; project API keys can access it directly. The web proxy rejects cross-origin mutation requests.
-
-`DATABASE_URL=postgresql+psycopg://...` enables PostgreSQL. All identifiers use UUIDs except preserved OTel trace/span identifiers. Foreign keys, indexes, project constraints, event deduplication, and Alembic migrations are provided. Retention removes expired executions without incidents once per hour; evidence linked to incidents stays pinned. Model list pricing is versioned in `apps/api/app/telemetry.py`; unknown models remain unpriced.
-
-## Verification
-
-```bash
-npm run test:api                     # API + SDK tests; isolated temporary database
-npm run test:cli                     # REPL safety, errors and aliases
-npm run test:web                     # Vitest presentation/trace tests
+npm run test:api
+npm run test:cli
+npm run test:web
 npm --prefix apps/web run typecheck
-.venv/bin/ruff check apps/api packages/python-sdk examples
+.venv/bin/ruff check apps/api packages/python-sdk packages/cli examples
 .venv/bin/mypy apps/api/app --ignore-missing-imports --follow-untyped-imports
 npm run build
-# While npm run dev is running:
-npm --prefix apps/web run test:e2e
 ```
 
-Playwright uses Chromium from the locked `@sparticuz/chromium` npm package, avoiding an extra browser CDN requirement. Browser checks create a dedicated project and labeled demo telemetry; they cover empty states, simulation, investigation, approval, delayed recovery, API key lifecycle, and mobile navigation. Screenshots are generated in ignored `.local/`.
+With the local servers running, `npm --prefix apps/web run test:e2e` exercises the browser workflow. Browser tests create dedicated synthetic projects. Stop the web development server before a production build so the build does not replace its active output.
 
-## Scope
+`npm run accept:containers` runs the isolated container, SDK, browser, CLI, restart-persistence, and graceful-shutdown checks. Read its [prerequisites and resource requirements](docs/local-containers.md) first. It retains its database volume and sanitized measurements; it does not prune Docker resources.
 
-This release implements the requested dashboard and REST API with a functional local telemetry/incident pipeline. It is a modular monolith, not the complete production infrastructure described in the broader project vision. Multi-user organizations/RBAC, Redis Streams dispatch and dead-letter queues, collector deployment, distributed worker coordination, custom real-agent control adapters, cancellable model investigations, and ClickHouse are future extensions. The current SDK exports normalized JSON; the API separately accepts OTel protobuf/JSON from standard exporters. Neither Docker deployment nor external model credentials are required for local development.
+### Landing site and documentation
 
-## Optional Docker stack
-
-The local Compose stack uses digest-pinned PostgreSQL, non-root API/web containers, file-mounted secrets, read-only application filesystems, readiness checks, and CPU/memory/process limits. Only loopback ports are published. It uses the existing durable outbox and deterministic investigator; no Redis or external LLM is required.
+`apps/landing` is the independent, light-and-amber public site. It exports the homepage and `/docs` as static files and requires no API, database, or server credentials.
 
 ```bash
-npm run accept:containers
+npm --prefix apps/landing ci
+npm --prefix apps/landing run build
+npm --prefix apps/landing run typecheck
+npm --prefix apps/landing run verify
 ```
 
-This command creates its own disposable project and database, builds both images, runs native checks and real SDK ingestion, exercises the browser workflow, restarts without deleting the database, and stops its services after success. It retains its database volume and a sanitized report under ignored `.local/container-acceptance/`. It never replaces native SQLite data or prunes Docker resources. See [exact prerequisites, manual startup, restart and troubleshooting commands](docs/local-containers.md).
+For Vercel, use **apps/landing** as the Root Directory and **main** as the production branch. See [the deployment guide](apps/landing/README.md). The dashboard remains in `apps/web`; it is a separate application.
+
+## Documentation
+
+- **Public `/docs` page:** product overview, local setup, CLI walkthrough, terminal screenshots, SDK integration, and troubleshooting.
+- [CLI guide](docs/cli.md): installation, authentication, scenarios, and explicit intervention commands.
+- [API reference](docs/api.md): endpoints, project authorization, normalized events, and OTLP ingestion.
+- [Container guide](docs/local-containers.md): prerequisites, startup, restart, shutdown, and trust configuration.
+- [Local validation records](docs/container-validation.md): measured behavior and remaining limitations.
+
+For a reproducible bug report, include the source commit, runtime versions, steps to reproduce, and sanitized output. Exclude credentials, private telemetry, and `.local/` contents.

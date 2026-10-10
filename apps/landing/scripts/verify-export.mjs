@@ -4,10 +4,18 @@ import { resolve } from "node:path";
 
 const app = resolve(import.meta.dirname, "..");
 const manifest = JSON.parse(await readFile(resolve(app, ".next/server/app-paths-manifest.json"), "utf8"));
-const allowed = new Set(["/page", "/icon.svg/route", "/_not-found/page", "/_global-error/page"]);
+const allowed = new Set(["/page", "/docs/page", "/icon.svg/route", "/_not-found/page", "/_global-error/page"]);
 assert(Object.keys(manifest).every((route) => allowed.has(route)), "Landing build includes an unexpected route");
 const html = await readFile(resolve(app, "out/index.html"), "utf8");
 assert(html.includes("Your agents run."), "Landing page was not exported");
+assert(html.includes('href="/docs"'), "Landing page does not link to documentation");
+const documentation = await readFile(resolve(app, "out/docs.html"), "utf8");
+assert(documentation.includes("What is AgentScope?"), "Documentation page was not exported");
+for (const screenshot of ["cli-start", "cli-demo"]) {
+  const bytes = await readFile(resolve(app, `out/docs-assets/${screenshot}.png`));
+  assert(bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), "Documentation screenshot is not a PNG");
+  assert(documentation.includes(`/docs-assets/${screenshot}.png`), "Documentation does not include the terminal screenshot");
+}
 assert(!/href="\/(?:dashboard|api|simulation|settings|agents|runs|incidents|investigations)(?:[/?"#])/.test(html), "Landing page links to an unavailable application route");
 
 async function checkFiles(directory) {
@@ -21,4 +29,4 @@ async function checkFiles(directory) {
   }
 }
 await checkFiles(resolve(app, "out"));
-console.log("Landing-only static export verified: no dashboard/API routes or privileged configuration.");
+console.log("Public homepage and documentation export verified: terminal screenshots included, no dashboard/API routes or privileged configuration.");
