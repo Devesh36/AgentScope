@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Copy, Terminal } from "lucide-react";
 
 const commands = {
-  uv: 'uv tool install "git+https://github.com/Devesh36/AgentScope.git@feat/local-container-acceptance"',
+  uv: 'uv tool install "git+https://github.com/Devesh36/AgentScope.git@main"',
   Homebrew: "brew tap Devesh36/agentscope https://github.com/Devesh36/AgentScope.git\nbrew install Devesh36/agentscope/agentscope",
 };
 
