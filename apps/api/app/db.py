@@ -97,7 +97,12 @@ class Run(Scoped, Base):
     __tablename__ = "runs"
     agent_id: Mapped[str] = mapped_column(ForeignKey("agents.id"), index=True)
     external_id: Mapped[str] = mapped_column(String(128))
-    __table_args__ = (UniqueConstraint("project_id", "external_id"),)
+    __table_args__ = (
+        UniqueConstraint("project_id", "external_id"),
+        Index("ix_runs_project_start", "project_id", "started_at"),
+        Index("ix_runs_agent_start", "agent_id", "started_at"),
+        Index("ix_runs_status", "status"),
+    )
     name: Mapped[str] = mapped_column(String(200), default="Agent execution")
     status: Mapped[str] = mapped_column(String(24), default="running")
     started_at: Mapped[datetime] = mapped_column(
@@ -162,6 +167,11 @@ class Anomaly(Scoped, Base):
 
 class Incident(Scoped, Base):
     __tablename__ = "incidents"
+    __table_args__ = (
+        Index("ix_incidents_agent_created", "agent_id", "created_at"),
+        Index("ix_incidents_run", "run_id"),
+        Index("ix_incidents_project_status", "project_id", "status"),
+    )
     anomaly_id: Mapped[str] = mapped_column(ForeignKey("anomalies.id"), unique=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"))
     agent_id: Mapped[str] = mapped_column(ForeignKey("agents.id"))
@@ -172,6 +182,7 @@ class Incident(Scoped, Base):
 
 class Investigation(Scoped, Base):
     __tablename__ = "investigations"
+    __table_args__ = (Index("ix_investigations_status", "status"),)
     incident_id: Mapped[str] = mapped_column(ForeignKey("incidents.id"), unique=True)
     status: Mapped[str] = mapped_column(String(30), default="queued")
     phase: Mapped[str] = mapped_column(String(80), default="Collect evidence")

@@ -52,8 +52,14 @@ def test_frozen_migrations_first_start_and_repeat(tmp_path, monkeypatch):
 
     with sqlite3.connect(tmp_path / "fresh.db") as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "001",
+            "002",
         )
+        indexes = {row[1] for row in db.execute("PRAGMA index_list('runs')")}
+        assert {
+            "ix_runs_project_start",
+            "ix_runs_agent_start",
+            "ix_runs_status",
+        } <= indexes
         assert db.execute("SELECT count(*) FROM telemetry_events").fetchone() == (0,)
 
 

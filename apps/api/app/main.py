@@ -41,6 +41,7 @@ from .db import (
     now,
     uid,
 )
+from .read_models import agent_views, overview_metrics, run_views, serialize
 from .schemas import (
     AgentCreate,
     AgentUpdate,
@@ -151,7 +152,9 @@ def get_db():
         yield db
 
 
-DB = Annotated[DBSession, Depends(get_db)]
+# Streaming responses do not use this session after authentication. Release it
+# before streaming so open dashboard tabs do not occupy the database pool.
+DB = Annotated[DBSession, Depends(get_db, scope="function")]
 
 
 def credential(request):
@@ -205,32 +208,8 @@ def record(db, model, object_id, project_id):
     return row
 
 
-def serialize(row):
-    return {
-        c.name: (aware(value).isoformat() if hasattr(value, "isoformat") else value)
-        for c in row.__table__.columns
-        if (value := getattr(row, c.name)) is not None
-    }
-
-
 def run_view(db, run):
-    agent = db.get(Agent, run.agent_id)
-    end = aware(run.ended_at) if run.ended_at else now()
-    return {
-        **serialize(run),
-        "cost": run.cost,
-        "tokens": run.input_tokens + run.output_tokens,
-        "duration_ms": max(
-            0, round((end - aware(run.started_at)).total_seconds() * 1000)
-        ),
-        "agent_name": agent.name,
-        "framework": agent.framework,
-        "environment": agent.environment,
-        "incidents": [
-            serialize(i)
-            for i in db.scalars(select(Incident).where(Incident.run_id == run.id))
-        ],
-    }
+    return run_views(db, [run])[0]
 
 
 def watch_view(agent):
@@ -253,48 +232,7 @@ def watch_view(agent):
 
 
 def agent_view(db, agent):
-    runs = list(
-        db.scalars(
-            select(Run).where(Run.agent_id == agent.id).order_by(Run.started_at.desc())
-        )
-    )
-    terminal = [r for r in runs if r.status in ("completed", "failed")]
-    incidents = list(
-        db.scalars(
-            select(Incident)
-            .where(Incident.agent_id == agent.id)
-            .order_by(Incident.created_at.desc())
-        )
-    )
-    return {
-        **serialize(agent),
-        "status": "degraded"
-        if any(i.status not in ("RESOLVED", "DISMISSED") for i in incidents)
-        else "active"
-        if any(r.status == "running" for r in runs)
-        else "healthy"
-        if runs
-        else "idle",
-        "success_rate": round(
-            sum(r.status == "completed" for r in terminal) / len(terminal) * 100, 1
-        )
-        if terminal
-        else None,
-        "average_latency_ms": round(
-            sum(
-                (aware(r.ended_at) - aware(r.started_at)).total_seconds() * 1000
-                for r in terminal
-                if r.ended_at
-            )
-            / len(terminal)
-        )
-        if terminal
-        else None,
-        "tokens": sum(r.input_tokens + r.output_tokens for r in runs),
-        "run_count": len(runs),
-        "recent_runs": [run_view(db, r) for r in runs[:5]],
-        "recent_incidents": [serialize(i) for i in incidents[:5]],
-    }
+    return agent_views(db, [agent])[0]
 
 
 def incident_view(db, incident, full=False):
@@ -383,12 +321,12 @@ def create_project(body: ProjectCreate, db: DB, _: Admin):
 
 @app.get("/api/v1/agents")
 def agents(db: DB, project_id: Scope):
-    return [
-        agent_view(db, a)
-        for a in db.scalars(
+    items = list(
+        db.scalars(
             select(Agent).where(Agent.project_id == project_id).order_by(Agent.name)
         )
-    ]
+    )
+    return agent_views(db, items)
 
 
 @app.post("/api/v1/agents", status_code=201)
@@ -575,12 +513,16 @@ def runs(
         )
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))
     return {
-        "items": [
-            run_view(db, r)
-            for r in db.scalars(
-                stmt.order_by(Run.started_at.desc()).offset(offset).limit(limit)
-            )
-        ],
+        "items": run_views(
+            db,
+            list(
+                db.scalars(
+                    stmt.order_by(Run.started_at.desc(), Run.id.desc())
+                    .offset(offset)
+                    .limit(limit)
+                )
+            ),
+        ),
         "total": total,
     }
 
@@ -849,134 +791,62 @@ def overview(
     hours: int = Query(24, ge=1, le=8760),
     synthetic: bool | None = None,
 ):
-    since = now() - timedelta(hours=hours)
-    stmt = select(Run).where(Run.project_id == project_id, Run.started_at >= since)
+    metrics = overview_metrics(db, project_id, hours, synthetic)
+    agent_query = select(Agent).where(Agent.project_id == project_id)
     if synthetic is not None:
-        stmt = stmt.where(Run.synthetic == synthetic)
-    rows = list(db.scalars(stmt))
-    spans = (
-        list(db.scalars(select(Span).where(Span.run_id.in_([r.id for r in rows]))))
-        if rows
-        else []
-    )
-    terminal = [r for r in rows if r.status in ("completed", "failed")]
-    durations = sorted(
-        (aware(r.ended_at) - aware(r.started_at)).total_seconds() * 1000
-        for r in terminal
-        if r.ended_at
-    )
-
-    def percentile(q):
-        return (
-            round(durations[min(len(durations) - 1, round((len(durations) - 1) * q))])
-            if durations
-            else None
+        agent_query = agent_query.where(Agent.synthetic == synthetic)
+    all_agents = list(db.scalars(agent_query.order_by(Agent.name)))
+    active_query = (
+        select(Incident)
+        .join(Run, Run.id == Incident.run_id)
+        .where(
+            Incident.project_id == project_id,
+            Incident.status.notin_(["RESOLVED", "DISMISSED"]),
         )
-
+    )
+    if synthetic is not None:
+        active_query = active_query.where(Run.synthetic == synthetic)
+    active_count = db.scalar(select(func.count()).select_from(active_query.subquery()))
     active = list(
         db.scalars(
-            select(Incident).where(
-                Incident.project_id == project_id,
-                Incident.status.notin_(["RESOLVED", "DISMISSED"]),
+            active_query.order_by(Incident.created_at.desc(), Incident.id.desc()).limit(
+                5
             )
         )
     )
-    if synthetic is not None:
-        active = [
-            i
-            for i in active
-            if record(db, Run, i.run_id, project_id).synthetic == synthetic
-        ]
-    llms = [s for s in spans if s.kind == "llm"]
-    grounding = [s.attributes["grounding"] for s in llms if "grounding" in s.attributes]
-    bins = [
-        {
-            "at": (since + timedelta(hours=hours * i / 24)).isoformat(),
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "tool_calls": 0,
-            "tool_errors": 0,
-            "runs": 0,
-        }
-        for i in range(24)
-    ]
-
-    def pos(value):
-        return min(
-            23,
-            max(0, int((aware(value) - since).total_seconds() / (hours * 3600 / 24))),
+    investigations = db.execute(
+        select(Investigation, Incident.title)
+        .join(
+            Incident,
+            Incident.id == Investigation.incident_id,
         )
-
-    for run in rows:
-        bins[pos(run.started_at)]["runs"] += 1
-        bins[pos(run.started_at)]["input_tokens"] += run.input_tokens
-        bins[pos(run.started_at)]["output_tokens"] += run.output_tokens
-    for span in spans:
-        if span.kind == "tool":
-            bins[pos(span.started_at)]["tool_calls"] += 1
-            bins[pos(span.started_at)]["tool_errors"] += int(span.status == "failed")
-    all_agents = list(db.scalars(select(Agent).where(Agent.project_id == project_id)))
+        .where(Investigation.project_id == project_id)
+        .order_by(Investigation.created_at.desc())
+        .limit(5)
+    ).all()
+    recent_query = select(Run).where(
+        Run.project_id == project_id,
+        Run.started_at >= now() - timedelta(hours=hours),
+    )
     if synthetic is not None:
-        all_agents = [a for a in all_agents if a.synthetic == synthetic]
-    invs = list(
-        db.scalars(
-            select(Investigation)
-            .where(Investigation.project_id == project_id)
-            .order_by(Investigation.created_at.desc())
-            .limit(5)
-        )
+        recent_query = recent_query.where(Run.synthetic == synthetic)
+    recent = list(
+        db.scalars(recent_query.order_by(Run.started_at.desc(), Run.id.desc()).limit(5))
     )
     return {
+        **metrics,
         "registered_agents": len(all_agents),
-        "active_runs": sum(r.status == "running" for r in rows),
-        "completed_runs": sum(r.status == "completed" for r in rows),
-        "failed_runs": sum(r.status == "failed" for r in rows),
-        "success_rate": round(
-            sum(r.status == "completed" for r in terminal) / len(terminal) * 100, 1
-        )
-        if terminal
-        else None,
-        "tokens": sum(r.input_tokens + r.output_tokens for r in rows),
-        "input_tokens": sum(r.input_tokens for r in rows),
-        "output_tokens": sum(r.output_tokens for r in rows),
-        "cost": round(sum(s.cost or 0 for s in llms), 6)
-        if llms and all(s.cost is not None for s in llms)
-        else None,
+        "active_incidents": active_count,
         "pricing_version": PRICING_VERSION,
-        "active_incidents": len(active),
-        "total_runs": len(rows),
-        "average_latency_ms": round(sum(durations) / len(durations))
-        if durations
-        else None,
-        "latency_p50": percentile(0.5),
-        "latency_p95": percentile(0.95),
-        "latency_p99": percentile(0.99),
-        "tool_calls": sum(s.kind == "tool" for s in spans),
-        "tool_errors": sum(s.kind == "tool" and s.status == "failed" for s in spans),
-        "llm_calls": len(llms),
-        "llm_errors": sum(s.status == "failed" for s in llms),
-        "grounding_evaluations": len(grounding),
-        "unsupported_claims": sum(g["unsupported_claims"] for g in grounding)
-        if grounding
-        else None,
         "watch_sessions": [
             watch_view(a) for a in all_agents if a.configuration.get("watch")
         ],
-        "synthetic_runs": sum(r.synthetic for r in rows),
-        "series": bins,
-        "agents": [agent_view(db, a) for a in all_agents],
-        "incidents": [incident_view(db, i) for i in active[:5]],
+        "agents": agent_views(db, all_agents),
+        "incidents": [incident_view(db, i) for i in active],
         "investigations": [
-            {
-                **serialize(i),
-                "incident_title": record(db, Incident, i.incident_id, project_id).title,
-            }
-            for i in invs
+            {**serialize(i), "incident_title": title} for i, title in investigations
         ],
-        "recent_runs": [
-            run_view(db, r)
-            for r in sorted(rows, key=lambda r: r.started_at, reverse=True)[:5]
-        ],
+        "recent_runs": run_views(db, recent, {a.id: a for a in all_agents}),
         "updated_at": now().isoformat(),
     }
 

@@ -39,6 +39,11 @@
       "id": "watch",
       "title": "Monitoring starts in your project",
       "summary": "Install AgentScope, start watch from an existing repository, and open a local dashboard with live runtime telemetry. Project setup and local services are prepared automatically."
+    },
+    {
+      "id": "performance",
+      "title": "Faster monitoring with less overhead",
+      "summary": "Batched telemetry and database summaries reduce monitoring overhead. Dashboard pages load only their own features and use live updates efficiently."
     }
   ],
   "commits": [
@@ -139,12 +144,20 @@
       "summary": "Added automatic local services, persistent project setup, background REPL monitoring, Python and Node.js LLM capture, dashboard activity metrics, and explicit grounding assessments."
     },
     {
-      "sha": null,
+      "sha": "bb91a8505943496d064c502488e3eb5641a6b973",
       "date": "2026-10-10",
       "subject": "Polish the AgentScope REPL and add guided workflow commands",
       "phase": "cli",
       "title": "Made the REPL easier to navigate",
       "summary": "Added an amber terminal layout, project-aware prompts, grouped help, readable activity and investigation summaries, slash aliases, useful workflow commands, and contextual guidance."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-10",
+      "subject": "Optimize telemetry ingestion and dashboard performance",
+      "phase": "performance",
+      "title": "Reduced monitoring and dashboard overhead",
+      "summary": "Batched ingestion and history queries, added database indexes, split dashboard pages into smaller bundles, reduced idle polling, and corrected failure health reporting. Added reproducible performance checks."
     }
   ]
 }

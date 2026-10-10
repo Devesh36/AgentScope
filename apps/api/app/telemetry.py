@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import case, func, select, tuple_
 
 from .db import Agent, Run, Span, TelemetryEvent, uid
 from .schemas import SpanEvent
@@ -25,27 +25,55 @@ def aware(value):
 def ingest(db, project_id, events, synthetic=False):
     accepted, duplicate = 0, 0
     affected = set()
-    # Validate the whole batch before persisting any records.
+    # Preload this bounded batch once; repeated event IDs are still acknowledged
+    # individually, and every lookup remains scoped to the authenticated project.
+    agents = {
+        agent.id: agent
+        for agent in db.scalars(
+            select(Agent).where(
+                Agent.project_id == project_id,
+                Agent.id.in_({event.agent_id for event in events}),
+            )
+        )
+    }
     for event in events:
-        agent = db.get(Agent, event.agent_id)
-        if not agent or agent.project_id != project_id:
+        if event.agent_id not in agents:
             raise HTTPException(404, "Agent not found in this project")
         if event.ended_at and event.ended_at < event.started_at:
             raise HTTPException(422, "Span end must follow span start")
-    for event in events:
-        if db.scalar(
-            select(TelemetryEvent).where(
+    seen = set(
+        db.scalars(
+            select(TelemetryEvent.event_id).where(
                 TelemetryEvent.project_id == project_id,
-                TelemetryEvent.event_id == event.event_id,
-            )
-        ):
-            duplicate += 1
-            continue
-        run = db.scalar(
-            select(Run).where(
-                Run.project_id == project_id, Run.external_id == event.run_id
+                TelemetryEvent.event_id.in_({event.event_id for event in events}),
             )
         )
+    )
+    runs = {
+        run.external_id: run
+        for run in db.scalars(
+            select(Run).where(
+                Run.project_id == project_id,
+                Run.external_id.in_({event.run_id for event in events}),
+            )
+        )
+    }
+    spans = {
+        (span.trace_id, span.span_id): span
+        for span in db.scalars(
+            select(Span).where(
+                Span.project_id == project_id,
+                tuple_(Span.trace_id, Span.span_id).in_(
+                    {(event.trace_id, event.span_id) for event in events}
+                ),
+            )
+        )
+    }
+    for event in events:
+        if event.event_id in seen:
+            duplicate += 1
+            continue
+        run = runs.get(event.run_id)
         if run and run.agent_id != event.agent_id:
             raise HTTPException(
                 409, "Run identifier already belongs to a different agent"
@@ -64,20 +92,17 @@ def ingest(db, project_id, events, synthetic=False):
             )
             db.add(run)
             db.flush()
+            runs[event.run_id] = run
         elif event.started_at < aware(run.started_at):
             run.started_at = event.started_at
-        span = db.scalar(
-            select(Span).where(
-                Span.project_id == project_id,
-                Span.trace_id == event.trace_id,
-                Span.span_id == event.span_id,
-            )
-        )
+        span_key = (event.trace_id, event.span_id)
+        span = spans.get(span_key)
         if span and span.run_id != run.id:
             raise HTTPException(409, "Trace span already belongs to another run")
         if not span:
             span = Span(id=uid(), project_id=project_id, run_id=run.id)
             db.add(span)
+            spans[span_key] = span
         # An older start update must not reopen a terminal span.
         if not span.ended_at or (
             event.ended_at and event.ended_at >= aware(span.ended_at)
@@ -98,7 +123,11 @@ def ingest(db, project_id, events, synthetic=False):
             ):
                 setattr(span, field, getattr(event, field))
             span.attributes = {**event.attributes, "synthetic": synthetic}
-            if event.kind == "llm" and event.model in PRICING and event.attributes.get("usage_observed") is not False:
+            if (
+                event.kind == "llm"
+                and event.model in PRICING
+                and event.attributes.get("usage_observed") is not False
+            ):
                 ip, op = PRICING[event.model]
                 span.cost = (
                     event.input_tokens * ip + event.output_tokens * op
@@ -123,20 +152,31 @@ def ingest(db, project_id, events, synthetic=False):
                 processed=False,
             )
         )
-        db.flush()
+        seen.add(event.event_id)
         affected.add(run.id)
         accepted += 1
-    for run_id in affected:
-        run = db.get(Run, run_id)
-        spans = list(db.scalars(select(Span).where(Span.run_id == run_id)))
-        llms = [s for s in spans if s.kind == "llm"]
-        run.input_tokens = sum(s.input_tokens for s in spans)
-        run.output_tokens = sum(s.output_tokens for s in spans)
-        run.cost = (
-            sum(s.cost or 0 for s in llms)
-            if llms and all(s.cost is not None for s in llms)
-            else None
+    db.flush()
+    if affected:
+        llm = Span.kind == "llm"
+        totals = db.execute(
+            select(
+                Span.run_id,
+                func.sum(Span.input_tokens).label("input_tokens"),
+                func.sum(Span.output_tokens).label("output_tokens"),
+                func.sum(case((llm, 1), else_=0)).label("llm_count"),
+                func.sum(case((llm & Span.cost.is_(None), 1), else_=0)).label(
+                    "unpriced"
+                ),
+                func.sum(case((llm, Span.cost), else_=None)).label("cost"),
+            )
+            .where(Span.project_id == project_id, Span.run_id.in_(affected))
+            .group_by(Span.run_id)
         )
+        by_id = {run.id: run for run in runs.values()}
+        for row in totals:
+            run = by_id[row.run_id]
+            run.input_tokens, run.output_tokens = row.input_tokens, row.output_tokens
+            run.cost = row.cost if row.llm_count and not row.unpriced else None
     db.flush()
     return {"accepted": accepted, "duplicates": duplicate, "run_ids": sorted(affected)}
 

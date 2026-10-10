@@ -3,6 +3,6 @@ requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "agentscope-sdk"
-version = "0.1.0"
+version = "0.1.1"
 description = "Bounded, metadata-first instrumentation for AgentScope"
 requires-python = ">=3.12"

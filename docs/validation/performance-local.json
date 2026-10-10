@@ -1,0 +1,171 @@
+{
+  "date_utc": "2026-10-10",
+  "baseline_commit": "bb91a8505943496d064c502488e3eb5641a6b973",
+  "baseline_cli_version": "0.3.1",
+  "optimized_cli_version": "0.3.2",
+  "backend": "SQLite",
+  "method": "Five timing samples per median; reads include JSON serialization, ingestion includes commit after an initial 500-run warm-up. SELECT counts exclude writes and HTTP/authentication. Python peaks measured in a separate tracemalloc pass. Browser sizes are decoded JS response bodies on fresh pages in the same local Chromium environment.",
+  "before": {
+    "fixture": {
+      "agents": 20,
+      "runs": 5000,
+      "llm_spans": 5000
+    },
+    "measurements": {
+      "overview": {
+        "median_ms": 314.04,
+        "select_queries": 150,
+        "peak_python_mib": 18.54
+      },
+      "agents": {
+        "median_ms": 76.67,
+        "select_queries": 141,
+        "peak_python_mib": 0.59
+      },
+      "run_page": {
+        "median_ms": 18.8,
+        "select_queries": 102,
+        "peak_python_mib": 0.16
+      },
+      "ingestion": {
+        "events_per_batch": 500,
+        "median_ms": 602.65,
+        "select_queries": 2501
+      }
+    },
+    "metrics": {
+      "total_runs": 5000,
+      "tokens": 40000,
+      "llm_calls": 5000,
+      "llm_errors": 500,
+      "cost": 0.05,
+      "grounding_evaluations": 2,
+      "unsupported_claims": 1,
+      "latency_p50": 175,
+      "latency_p95": 287,
+      "latency_p99": 297
+    }
+  },
+  "after": {
+    "fixture": {
+      "agents": 20,
+      "runs": 5000,
+      "llm_spans": 5000
+    },
+    "measurements": {
+      "overview": {
+        "median_ms": 56.17,
+        "select_queries": 16,
+        "peak_python_mib": 0.66
+      },
+      "agents": {
+        "median_ms": 15.44,
+        "select_queries": 6,
+        "peak_python_mib": 0.35
+      },
+      "run_page": {
+        "median_ms": 3.19,
+        "select_queries": 4,
+        "peak_python_mib": 0.16
+      },
+      "ingestion": {
+        "events_per_batch": 500,
+        "median_ms": 77.72,
+        "select_queries": 5
+      }
+    },
+    "metrics": {
+      "total_runs": 5000,
+      "tokens": 40000,
+      "llm_calls": 5000,
+      "llm_errors": 500,
+      "cost": 0.05,
+      "grounding_evaluations": 2,
+      "unsupported_claims": 1,
+      "latency_p50": 175,
+      "latency_p95": 287,
+      "latency_p99": 297
+    }
+  },
+  "browser_before": {
+    "dashboard": {
+      "js_requests": 11,
+      "decoded_js_bytes": 1180546
+    },
+    "runs": {
+      "js_requests": 11,
+      "decoded_js_bytes": 1180546
+    }
+  },
+  "browser_after": {
+    "dashboard": {
+      "js_requests": 12,
+      "decoded_js_bytes": 923873
+    },
+    "runs": {
+      "js_requests": 12,
+      "decoded_js_bytes": 601834
+    }
+  },
+  "watch_acceptance": {
+    "provider_calls": "Local mock HTTP only",
+    "python_sdks": {
+      "openai": "2.54.0",
+      "anthropic": "0.125.0"
+    },
+    "node_sdks": {
+      "openai": "7.32.0",
+      "anthropic": "0.133.0"
+    },
+    "checks": [
+      "Automatic startup and stable project provisioning",
+      "Duplicate watcher rejected without affecting the live session",
+      "Python/Node real provider SDKs, sync/async calls, SSE streams and exceptions",
+      "Usage/timing persisted with metadata-only telemetry",
+      "Whole-agent/tool grouping without duplicate LLM spans",
+      "Grounding remains unassessed without an evaluator",
+      "Captured tool-loop telemetry produces an evidence-grounded investigation",
+      "Explicit grounding assessment displayed without duplicate capture",
+      "Project files unchanged and credential files private",
+      "Production browser checks: automatic project selection, live metrics, grounding, public docs, and responsive layouts",
+      "Graceful shutdown and restart persistence",
+      "Unexpected parent death releases owned services and allows restart",
+      "REPL watch remains interactive and stop/exit preserve records",
+      "Finite watch preserves application exit code and stops services"
+    ],
+    "llm_calls": 22,
+    "llm_errors": 2,
+    "unsupported_claims": 2
+  },
+  "package_acceptance": {
+    "version": "0.3.2",
+    "wheel_and_sdist": "passed",
+    "fresh_runtime_setup": "passed",
+    "migration": "002",
+    "repl_watch_run_status_stop": "passed"
+  },
+  "genuine_local_model_demo": {
+    "genuine_local_model": "SmolLM2-135M-Instruct",
+    "llm_calls": 3,
+    "llm_errors": 1,
+    "tokens": 120,
+    "grounding": "Not evaluated",
+    "cost": "Unavailable",
+    "existing_data_preserved": true,
+    "migration": "002"
+  },
+  "api_tests": {
+    "SQLite": 32,
+    "PostgreSQL": 32
+  },
+  "cli_tests": 21,
+  "web_unit_tests": 3,
+  "postgresql_migration": {
+    "from": "001",
+    "to": "002",
+    "existing_project_preserved": true,
+    "repeat_upgrade": "passed",
+    "indexes": 7
+  },
+  "browser_tests": 5
+}

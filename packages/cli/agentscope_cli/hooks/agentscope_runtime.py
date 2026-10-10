@@ -12,7 +12,6 @@ import importlib.machinery
 import os
 import sys
 import threading
-from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -35,12 +34,7 @@ def scope():
         if _scope is None:
             from agentscope_sdk import AgentScope
 
-            _scope = AgentScope(
-                os.environ["AGENTSCOPE_WATCH_URL"],
-                Path(os.environ["AGENTSCOPE_WATCH_KEY_FILE"]).read_text().strip(),
-                os.environ["AGENTSCOPE_WATCH_AGENT_NAME"],
-                framework="Automatic LLM instrumentation",
-            )
+            _scope = AgentScope.from_watch()
         return _scope
 
 

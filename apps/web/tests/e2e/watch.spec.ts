@@ -32,6 +32,15 @@ test("watch dashboard selects its project and distinguishes live calls from grou
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   await expect(metric("Unsupported claims")).toHaveText("2");
   await expect(metric("Tokens consumed")).toHaveText("18");
+  const failure = { status: "failed", ended_at: new Date().toISOString(), error: "HTTP 500: browser failure fixture" };
+  expect((await request.post("/api/v1/telemetry/events", { headers, data: { events: [
+    { ...evaluated, ...failure, event_id: randomUUID() },
+    { ...root, ...failure, event_id: randomUUID() },
+  ] } })).status()).toBe(202);
+  // The live stream must update health without a manual refresh or interval poll.
+  await expect(page.getByText("Execution failures recorded · inspect the affected runs", { exact: true })).toBeVisible();
+  await expect(metric("Unsupported claims")).toHaveText("2");
+  await expect(metric("Tokens consumed")).toHaveText("18");
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();

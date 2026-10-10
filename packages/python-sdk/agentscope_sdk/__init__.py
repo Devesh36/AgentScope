@@ -37,7 +37,13 @@ class AgentScope:
             raise ValueError(
                 "Launch this application with agentscope watch or agentscope run first"
             ) from None
-        return cls(endpoint, key, name, framework="Automatic LLM instrumentation")
+        return cls(
+            endpoint,
+            key,
+            name,
+            framework="Automatic LLM instrumentation",
+            agent_id=os.environ.get("AGENTSCOPE_WATCH_AGENT_ID"),
+        )
 
     def __init__(
         self,
@@ -49,6 +55,7 @@ class AgentScope:
         timeout=3,
         queue_size=1000,
         batch_size=50,
+        agent_id=None,
     ):
         if (
             not isinstance(queue_size, int)
@@ -70,6 +77,8 @@ class AgentScope:
             agent_name,
         )
         self.environment, self.framework = environment, framework
+        # Watch already provisioned this project-scoped agent; reuse its ID.
+        self._agent_id = agent_id
         self.timeout, self.batch_size = timeout, batch_size
         self._queue = queue.Queue(maxsize=queue_size)
         self._stop = threading.Event()
@@ -122,7 +131,7 @@ class AgentScope:
                     break
 
     def _export(self):
-        agent_id = None
+        agent_id = self._agent_id
         while not self._stop.is_set() or not self._queue.empty():
             if self._abort.is_set() or (
                 self._deadline is not None and time.monotonic() >= self._deadline

@@ -191,6 +191,7 @@ Use the existing repository scripts:
 npm run test:api
 npm run test:cli
 npm run test:web
+npm run accept:performance -- --report .local/performance-report.json
 npm --prefix apps/web run typecheck
 .venv/bin/ruff check apps/api packages/python-sdk packages/cli examples
 .venv/bin/mypy apps/api/app --ignore-missing-imports --follow-untyped-imports
@@ -200,6 +201,10 @@ npm run build
 With the local servers running, `npm --prefix apps/web run test:e2e` exercises the browser workflow. Browser tests create dedicated synthetic projects. Stop the web development server before a production build so the build does not replace its active output.
 
 `npm run accept:containers` runs the isolated container, SDK, browser, CLI, restart-persistence, and graceful-shutdown checks. Read its [prerequisites and resource requirements](docs/local-containers.md) first. It retains its database volume and sanitized measurements; it does not prune Docker resources.
+
+### Performance
+
+The 0.3.2 optimization pass batches telemetry ingestion, summarizes history in SQL, and loads dashboard features per page. In a local 5,000-run SQLite fixture, overview reads fell from 314 ms to 56 ms; 500-event updates fell from 603 ms to 78 ms. The dashboard uses live events for refreshes and polls when disconnected. See [the measured results and reproduction steps](docs/performance.md).
 
 ### Landing site and documentation
 
@@ -223,6 +228,7 @@ For Vercel, use **apps/landing** as the Root Directory and **main** as the produ
 - [CLI guide](docs/cli.md): installation, authentication, scenarios, and explicit intervention commands.
 - [API reference](docs/api.md): endpoints, project authorization, normalized events, and OTLP ingestion.
 - [Container guide](docs/local-containers.md): prerequisites, startup, restart, shutdown, and trust configuration.
+- [Performance guide](docs/performance.md): measured optimizations, reproducible benchmarks, and scaling limits.
 - [Local validation records](docs/container-validation.md): measured behavior and remaining limitations.
 
 For a reproducible bug report, include the source commit, runtime versions, steps to reproduce, and sanitized output. Exclude credentials, private telemetry, and `.local/` contents.

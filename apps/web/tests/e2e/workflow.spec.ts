@@ -117,7 +117,7 @@ test("complete observability, investigation, approval, and recovery workflow", a
   await expect(page.locator(".waterfall-row")).toHaveCount(2);
   await page.getByRole("link", { name: "Overview", exact: true }).click();
   await expect(
-    page.getByText("Your agents are operating normally"),
+    page.getByText("No execution failures recorded in this window"),
   ).toBeVisible();
   await expect(page.locator(".chart-box svg").first()).toBeVisible();
   await page.screenshot({

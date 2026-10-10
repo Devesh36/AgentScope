@@ -13,9 +13,15 @@ if (origin && originalFetch && origin.hostname === '127.0.0.1' && origin.protoco
   let sending = false;
   let key;
   let dropped = 0;
+  let timer;
   try { key = fs.readFileSync(process.env.AGENTSCOPE_WATCH_KEY_FILE, 'utf8').trim(); } catch { /* fail open */ }
   const agent = process.env.AGENTSCOPE_WATCH_AGENT_ID;
-  const enqueue = event => { if (queue.length < 1000) queue.push(event); else dropped++; };
+  const schedule = () => {
+    if (timer || sending || !queue.length) return;
+    timer = setTimeout(() => { timer = undefined; void flush(); }, 250);
+    timer.unref();
+  };
+  const enqueue = event => { if (queue.length < 1000) { queue.push(event); schedule(); } else dropped++; };
   const flush = async () => {
     if (sending || !queue.length || !key) return;
     sending = true;
@@ -35,10 +41,8 @@ if (origin && originalFetch && origin.hostname === '127.0.0.1' && origin.protoco
         }
         if (!delivered) dropped += batch.length;
       }
-    } finally { sending = false; }
+    } finally { sending = false; schedule(); }
   };
-  const timer = setInterval(flush, 250);
-  timer.unref();
 
   class Call {
     constructor(provider, operation, model) {
@@ -153,7 +157,7 @@ if (origin && originalFetch && origin.hostname === '127.0.0.1' && origin.protoco
     if (queue.length && key) void flush();
   });
   process.on('exit', () => {
-    clearInterval(timer);
+    clearTimeout(timer);
     if (dropped || queue.length) console.error(`AgentScope: ${dropped + queue.length} telemetry events were dropped; check local API availability.`);
   });
 }

@@ -71,12 +71,13 @@ export async function request<T>(
   return response.status === 204 ? (undefined as T) : response.json();
 }
 export function useData<T>(path: string, enabled = true) {
-  const { project } = useWorkspace();
+  const { project, connected } = useWorkspace();
   return useQuery<T, Error>({
     queryKey: [project, path],
-    queryFn: () => request<T>(path, project),
+    queryFn: ({ signal }) => request<T>(path, project, { signal }),
     enabled: Boolean(project) && enabled,
-    refetchInterval: 15000,
+    // The event stream refreshes active queries; polling is only a fallback.
+    refetchInterval: connected ? false : 15000,
   });
 }
 export function useAction() {
@@ -95,7 +96,7 @@ export function useAction() {
         method,
         body: method === "DELETE" ? undefined : JSON.stringify(body),
       });
-      await query.invalidateQueries();
+      await query.invalidateQueries({ predicate: (q) => q.queryKey[0] === project || (path.startsWith("projects") && q.queryKey[0] === "projects") });
       if (message) notify(message);
       return result;
     } catch (e) {
@@ -159,40 +160,58 @@ function Shell({ children }: { children: React.ReactNode }) {
   }, [projects, project]);
   useEffect(() => {
     if (!project) return;
-    let events: EventSource;
+    let events: EventSource | undefined;
     let retry: ReturnType<typeof setTimeout> | undefined;
     let delay = 1000;
     let active = true;
-    const refresh = () => client.invalidateQueries({ predicate: (q) => q.queryKey[0] === project });
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      // Coalesce connection-open and first-event notifications into one read.
+      if (refreshTimer || document.hidden) return;
+      refreshTimer = setTimeout(() => {
+        refreshTimer = undefined;
+        if (active) void client.invalidateQueries({ predicate: (q) => q.queryKey[0] === project }, { cancelRefetch: false });
+      }, 50);
+    };
     const connect = () => {
-      if (!active) return;
-      events = new EventSource(`/api/v1/events?project_id=${encodeURIComponent(project)}`);
-      events.onopen = () => {
-        if (!active) return;
+      if (!active || document.hidden) return;
+      const source = new EventSource(`/api/v1/events?project_id=${encodeURIComponent(project)}`);
+      events = source;
+      source.onopen = () => {
+        if (!active || source !== events || document.hidden) return;
         delay = 1000;
         setConnected(true);
         refresh();
       };
-      events.onerror = () => {
-        if (!active) return;
+      source.onerror = () => {
+        if (!active || source !== events || document.hidden) return;
         setConnected(false);
         // Some HTTP failures permanently close EventSource. Recreate it with
         // bounded backoff; each successful reconnect reads the persisted state.
-        events.close();
+        source.close();
         retry = setTimeout(connect, delay);
         delay = Math.min(delay * 2, 10000);
       };
-      events.addEventListener("refresh", () => {
-        if (!active) return;
+      source.addEventListener("refresh", () => {
+        if (!active || source !== events || document.hidden) return;
         setConnected(true);
         refresh();
       });
     };
+    const visibility = () => {
+      if (retry) clearTimeout(retry);
+      events?.close();
+      setConnected(false);
+      if (!document.hidden) connect();
+    };
+    document.addEventListener("visibilitychange", visibility);
     connect();
     return () => {
       active = false;
       if (retry) clearTimeout(retry);
-      events.close();
+      if (refreshTimer) clearTimeout(refreshTimer);
+      document.removeEventListener("visibilitychange", visibility);
+      events?.close();
       setConnected(false);
     };
   }, [project, client]);

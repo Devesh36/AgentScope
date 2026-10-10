@@ -421,7 +421,7 @@ class Stack:
                 "image": value["Image"],
             }
         require(
-            self.sql("SELECT version_num FROM alembic_version") == "001",
+            self.sql("SELECT version_num FROM alembic_version") == "002",
             "Migration did not reach head",
         )
         require(
