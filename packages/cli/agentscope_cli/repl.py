@@ -2,6 +2,7 @@
 
 import argparse
 import cmd
+import difflib
 import getpass
 import json
 import os
@@ -17,6 +18,7 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
+from .terminal import Terminal, plain
 
 SCENARIOS = (
     "tool_loop",
@@ -136,11 +138,7 @@ class Client:
 
 
 class Repl(cmd.Cmd):
-    prompt = "agentscope> "
-    intro = (
-        "AgentScope REPL · watch to monitor this project, help for commands, exit to leave.\n"
-        "watch starts a local workspace; demo uses synthetic telemetry. Approval and execution are separate actions."
-    )
+    intro = None
 
     def __init__(
         self, client, dashboard="http://127.0.0.1:3000", stdout=None, wait_seconds=60
@@ -154,18 +152,45 @@ class Repl(cmd.Cmd):
         self.watch_stop = None
         self.watch_thread = None
         self.watch_lock = None
+        self.project_name = None
+        self.terminal = Terminal(self.stdout)
+
+    @property
+    def prompt(self):
+        context = self.project_name or (
+            self.client.project[:8] if self.client.project else "ready"
+        )
+        if self.watch_session:
+            context += " | watch"
+        context = plain(context)[:40]
+        return self.terminal.style(f"agentscope [{context}] > ", prompt=True)
+
+    def preloop(self):
+        self.terminal.banner(__version__, str(Path.cwd()), self.client.endpoint)
 
     def write(self, value):
-        print(value, file=self.stdout)
+        for line in str(value).split("\n"):
+            print(plain(line), file=self.stdout)
 
     def onecmd(self, line):
+        # Slash commands are aliases for the same handlers, including safeguards.
+        line = line.lstrip().removeprefix("/")
         try:
             return super().onecmd(line)
         except ClientError as exc:
-            self.write(f"Error: {exc}")
+            self.terminal.text(f"Error: {exc}", "error")
+        except OSError:
+            self.terminal.text(
+                "Error: A local file or process could not be accessed. Check permissions and retry.",
+                "error",
+            )
         except KeyboardInterrupt:
-            self.write(
-                "Interrupted. Submitted server actions may still complete; check investigation status."
+            monitoring = (
+                " Local monitoring remains active." if self.watch_session else ""
+            )
+            self.terminal.text(
+                f"Interrupted.{monitoring} Submitted server actions may still complete. Use status or investigation to inspect them.",
+                "muted",
             )
         return False
 
@@ -174,21 +199,292 @@ class Repl(cmd.Cmd):
         return None
 
     def default(self, line):
-        self.write("Unknown command. Type help.")
+        command = line.split()[0] if line.split() else ""
+        candidates = self.completenames(command)
+        if not candidates:
+            candidates = difflib.get_close_matches(command, self.completenames(""), n=1)
+        hint = f" Did you mean {candidates[0]}?" if candidates else ""
+        self.terminal.text(
+            f"Unknown command: {command}.{hint} Type help to browse commands.", "error"
+        )
+
+    def completenames(self, text, *ignored):
+        prefix = "/" if text.startswith("/") else ""
+        return [prefix + name for name in super().completenames(text.removeprefix("/"))]
+
+    def do_help(self, arg):
+        """help [COMMAND]: browse grouped commands or show detailed usage."""
+        name = arg.strip().removeprefix("/")
+        if name:
+            handler = getattr(self, f"do_{name}", None)
+            if not handler or not handler.__doc__:
+                self.terminal.text(f"No help for {name}. Type help to browse commands.")
+                return
+            self.terminal.heading(name)
+            self.terminal.text(handler.__doc__)
+            if name in ("watch", "monitor"):
+                self.terminal.text(
+                    "Examples: watch . --no-open | watch -- python app.py | watch -- npm start"
+                )
+            elif name == "run":
+                self.terminal.text("Examples: run -- python app.py | run -- npm start")
+            return
+        # Help is deliberately local: browsing commands never requests credentials.
+        groups = [
+            (
+                "Monitor",
+                [
+                    ("watch [PATH]", "Start local monitoring in the background"),
+                    (
+                        "run -- COMMAND",
+                        "Launch an app with capture; waits until it exits",
+                    ),
+                    ("status [--json]", "View activity, usage, and watch health"),
+                    ("stop", "Stop local services and keep your records"),
+                    ("open", "Open the selected project's dashboard"),
+                ],
+            ),
+            (
+                "Explore",
+                [
+                    ("projects [--json]", "List workspaces"),
+                    ("use PROJECT_ID", "Switch the selected workspace"),
+                    ("agents [--json]", "List registered agents"),
+                    ("runs [--json]", "Inspect recent executions"),
+                    ("incidents [--json]", "List incidents and their IDs"),
+                ],
+            ),
+            (
+                "Investigate",
+                [
+                    ("investigate INCIDENT_ID", "Collect evidence and recommendations"),
+                    ("investigation [ID]", "Read the latest investigation"),
+                    ("demo [SCENARIO]", "Practice with labeled synthetic telemetry"),
+                ],
+            ),
+            (
+                "Demo controls",
+                [
+                    ("policy demo on|off", "Configure isolated synthetic control"),
+                    ("approve PROPOSAL_ID", "Approve a proposal separately"),
+                    ("execute PROPOSAL_ID", "Execute an approved synthetic proposal"),
+                    ("verify [ID]", "Wait for observed recovery evidence"),
+                ],
+            ),
+            (
+                "Session",
+                [
+                    ("guide / tips", "Step-by-step monitoring workflow"),
+                    ("clear", "Clear the visible terminal"),
+                    ("help COMMAND", "Read command usage"),
+                    ("exit / quit", "Close the REPL and its local services"),
+                ],
+            ),
+        ]
+        for title, items in groups:
+            self.terminal.heading(title)
+            self.terminal.pairs(items)
+        self.terminal.text(
+            "Slash aliases work too: /watch, /status, /help. Use --json for complete API data.",
+            "muted",
+        )
+
+    do_commands = do_help
+
+    def do_guide(self, arg):
+        """guide: show a practical monitoring workflow; no server connection required."""
+        self.terminal.heading("Your first session")
+        self.terminal.pairs(
+            [
+                (
+                    "1. Start",
+                    "watch . --no-open (leave off --no-open to launch the browser)",
+                ),
+                (
+                    "2. Launch",
+                    "In another terminal: agentscope run -- python app.py or agentscope run -- npm start",
+                ),
+                ("3. Inspect", "status -> agents -> runs -> incidents -> open"),
+                (
+                    "4. Investigate",
+                    "investigate INCIDENT_ID, then investigation to read the evidence",
+                ),
+                ("5. Finish", "stop keeps telemetry; exit closes this session"),
+            ]
+        )
+        self.terminal.heading("Useful notes")
+        self.terminal.text(
+            "You can also start an app with watch -- python app.py, or use run -- COMMAND here for a foreground run. Ctrl+C interrupts that run and returns to the REPL."
+        )
+        self.terminal.text(
+            "Start existing apps through watch/run to enable capture. Python OpenAI/Anthropic create calls and Node fetch-based compatible endpoints are supported. Tool boundaries need SDK instrumentation."
+        )
+        self.terminal.text(
+            "Prompts and response bodies are excluded from automatic capture. Unsupported claims show Not evaluated until your application supplies a grounding assessment."
+        )
+        self.terminal.text(
+            "Already have a server? projects, then use PROJECT_ID. To practice incident handling, demo creates an isolated synthetic project."
+        )
+
+    do_tips = do_guide
+
+    def do_clear(self, arg):
+        """clear: clear the visible terminal without changing the workspace or records."""
+        if self.terminal.interactive and os.environ.get("TERM") != "dumb":
+            self.terminal.write("\033[2J\033[H")
+        else:
+            self.write("Screen clearing is available in an interactive terminal.")
+
+    def json_requested(self, arg):
+        if arg.strip() not in ("", "--json"):
+            raise ClientError(
+                "Use --json for complete API data, or omit it for a readable summary."
+            )
+        return arg.strip() == "--json"
+
+    def render_records(self, title, records, describe, empty):
+        self.terminal.heading(title, f"{len(records)} records returned")
+        if not records:
+            self.terminal.text(empty, "muted")
+        for value in records:
+            name, detail = describe(value)
+            self.terminal.record(name, detail, value["id"])
 
     def do_status(self, arg):
-        """status: check authenticated API connectivity and selected project metrics."""
+        """status [--json]: check connectivity and project metrics over the last 24 hours."""
+        raw = self.json_requested(arg)
         projects = self.client.request("/api/v1/projects", scoped=False)
-        self.write(f"Connected to {self.client.endpoint}; {len(projects)} projects.")
-        if self.client.project:
+        metrics = (
+            self.client.request("/api/v1/metrics/overview")
+            if self.client.project
+            else None
+        )
+        if raw:
             self.write(
-                json.dumps(self.client.request("/api/v1/metrics/overview"), indent=2)
+                json.dumps(
+                    {
+                        "endpoint": self.client.endpoint,
+                        "project_id": self.client.project,
+                        "projects": projects,
+                        "metrics": metrics,
+                    },
+                    indent=2,
+                )
+            )
+            return
+        self.terminal.heading("Workspace")
+        self.terminal.text(
+            f"Connected to {self.client.endpoint}; {len(projects)} projects."
+        )
+        if self.client.project:
+            self.project_name = next(
+                (p["name"] for p in projects if p["id"] == self.client.project), None
+            )
+            self.terminal.pairs(
+                [
+                    ("Project", self.project_name or self.client.project),
+                    ("Project ID", self.client.project),
+                ]
+            )
+            self.terminal.heading(
+                "Activity", "Last 24 hours; status refreshes when you run it."
+            )
+            cost = metrics.get("cost")
+            claims = metrics.get("unsupported_claims")
+            self.terminal.pairs(
+                [
+                    ("Agents", metrics.get("registered_agents", 0)),
+                    (
+                        "Runs / active / failed",
+                        f"{metrics.get('total_runs', 0)} / {metrics.get('active_runs', 0)} / {metrics.get('failed_runs', 0)}",
+                    ),
+                    (
+                        "LLM calls / errors",
+                        f"{metrics.get('llm_calls', 0)} / {metrics.get('llm_errors', 0)}",
+                    ),
+                    (
+                        "Tokens / in / out",
+                        f"{metrics.get('tokens', 0)} / {metrics.get('input_tokens', 0)} / {metrics.get('output_tokens', 0)}",
+                    ),
+                    (
+                        "Estimated cost",
+                        f"${cost:.6f}"
+                        if cost is not None
+                        else "Unavailable (pricing or usage incomplete)",
+                    ),
+                    ("Active incidents", metrics.get("active_incidents", 0)),
+                    (
+                        "Unsupported claims",
+                        claims if claims is not None else "Not evaluated",
+                    ),
+                ]
+            )
+            for session in metrics.get("watch_sessions", []):
+                self.terminal.pairs(
+                    [("Watch", f"{session['repository']} / {session['status']}")]
+                )
+            self.terminal.text(
+                "Next: runs to inspect executions; incidents to find issues; open for the dashboard.",
+                "muted",
+            )
+        else:
+            self.terminal.text(
+                "Next: watch to monitor this repo, or projects then use PROJECT_ID to select a workspace.",
+                "muted",
             )
 
     def do_projects(self, arg):
-        """projects: list projects on the selected server."""
-        for project in self.client.request("/api/v1/projects", scoped=False):
-            self.write(f"{project['id']}  {project['name']}")
+        """projects [--json]: list projects; select one with use PROJECT_ID."""
+        raw = self.json_requested(arg)
+        projects = self.client.request("/api/v1/projects", scoped=False)
+        if raw:
+            self.write(json.dumps(projects, indent=2))
+            return
+        self.render_records(
+            "Projects",
+            projects,
+            lambda p: (
+                p["name"],
+                "Selected workspace"
+                if p["id"] == self.client.project
+                else "Select with use " + p["id"],
+            ),
+            "No projects yet. Type watch to create a local workspace, or demo for synthetic telemetry.",
+        )
+
+    def do_agents(self, arg):
+        """agents [--json]: list registered agents in the selected project."""
+        raw = self.json_requested(arg)
+        agents = self.client.request("/api/v1/agents")
+        if raw:
+            self.write(json.dumps(agents, indent=2))
+            return
+        self.render_records(
+            "Agents",
+            agents,
+            lambda a: (
+                a["name"],
+                f"{a.get('framework', 'Unknown framework')} / {'synthetic' if a.get('synthetic') else 'observed telemetry'}",
+            ),
+            "No registered agents. Launch your application through watch/run to begin capture.",
+        )
+
+    def do_runs(self, arg):
+        """runs [--json]: list recent executions in the selected project."""
+        raw = self.json_requested(arg)
+        result = self.client.request("/api/v1/runs")
+        if raw:
+            self.write(json.dumps(result, indent=2))
+            return
+        self.render_records(
+            "Recent runs",
+            result["items"],
+            lambda r: (
+                r["name"],
+                f"{r['status']} / {r.get('tokens', 0)} tokens / {r.get('duration_ms', 0)} ms / {'synthetic' if r.get('synthetic') else 'observed telemetry'}",
+            ),
+            "No executions recorded. Relaunch your app through watch/run, then use status to check capture.",
+        )
 
     def do_use(self, arg):
         """use PROJECT_ID: select an existing project."""
@@ -196,6 +492,9 @@ class Repl(cmd.Cmd):
         if not any(p["id"] == arg.strip() for p in projects):
             raise ClientError("Project ID not found on this server.")
         self.client.project = arg.strip()
+        self.project_name = next(
+            p["name"] for p in projects if p["id"] == self.client.project
+        )
         self.last_investigation = None
         self.write(f"Selected project {self.client.project}.")
 
@@ -223,6 +522,7 @@ class Repl(cmd.Cmd):
             scoped=False,
         )
         self.client.project = project["id"]
+        self.project_name = project["name"]
         self.last_investigation = None
         self.write(
             f"SYNTHETIC DEMO · project {project['id']} · scenario {scenario} · seed 42"
@@ -250,9 +550,18 @@ class Repl(cmd.Cmd):
         self.do_investigate(incident["id"])
 
     def do_incidents(self, arg):
-        """incidents: list persisted incidents in the selected project."""
-        for incident in self.client.request("/api/v1/incidents")["items"]:
-            self.write(f"{incident['id']}  {incident['status']}  {incident['title']}")
+        """incidents [--json]: list incidents; investigate one with investigate INCIDENT_ID."""
+        raw = self.json_requested(arg)
+        result = self.client.request("/api/v1/incidents")
+        if raw:
+            self.write(json.dumps(result, indent=2))
+            return
+        self.render_records(
+            "Incidents",
+            result["items"],
+            lambda i: (i["title"], f"{i['status']} / investigate {i['id']}"),
+            "No incidents recorded in this project. Use status to check whether activity is being captured.",
+        )
 
     def identifier(self, arg):
         value = arg.strip()
@@ -281,21 +590,33 @@ class Repl(cmd.Cmd):
         return self.client.request(f"/api/v1/investigations/{self.identifier(inv_id)}")
 
     def show_investigation(self, value):
-        self.write(f"Investigation {value['id']}: {value['status']}")
+        self.terminal.heading("Investigation", f"{value['id']} / {value['status']}")
         report = value.get("report", {})
         for field in ("summary", "decision_summary", "recommendation"):
             if report.get(field):
-                self.write(f"{field.replace('_', ' ').capitalize()}: {report[field]}")
+                self.terminal.heading(field.replace("_", " "))
+                self.terminal.text(report[field])
         self.write(f"Evidence references: {len(report.get('evidence', []))}")
         for remediation in self.proposals(value):
-            self.write(
-                f"Proposal {remediation['id']}: {remediation['status']} · verification {remediation.get('verification', {}).get('result', 'not started')}"
+            self.terminal.heading("Proposal")
+            self.terminal.pairs(
+                [
+                    ("ID", remediation["id"]),
+                    ("Status", remediation["status"]),
+                    (
+                        "Verification",
+                        remediation.get("verification", {}).get(
+                            "result", "not started"
+                        ),
+                    ),
+                ]
             )
-            self.write(
+            self.terminal.text(
                 f"Explicit controls: approve {remediation['id']} ; execute {remediation['id']}"
             )
-        self.write(
-            "Demo control is opt-in: policy demo on. Real agents remain recommendation-only."
+        self.terminal.text(
+            "Demo control is opt-in: policy demo on. Real agents remain recommendation-only.",
+            "muted",
         )
 
     def proposals(self, value):
@@ -424,9 +745,11 @@ class Repl(cmd.Cmd):
             session.launch()
             self.client = Client(session.endpoint, session.data / "admin-token")
             self.client.project = session.client.project
+            self.project_name = session.repo.name or "project"
             self.dashboard = session.dashboard
             self.last_investigation = None
             self.watch_stop = threading.Event()
+            # Capture this session's event; stop may clear the REPL attributes.
             stopped = self.watch_stop
 
             def keep_alive():
@@ -449,6 +772,32 @@ class Repl(cmd.Cmd):
             raise
 
     do_monitor = do_watch
+
+    def do_run(self, arg):
+        """run -- COMMAND: launch an app in this REPL's watched repository, with capture enabled. Waits for exit; Ctrl+C returns to the REPL."""
+        from .watch import run_existing
+
+        if not self.watch_session:
+            raise ClientError(
+                "Start watch in this REPL before using run. Type guide for the workflow."
+            )
+        try:
+            command = shlex.split(arg)
+        except ValueError:
+            raise ClientError("Unbalanced quoting in run command.") from None
+        if len(command) < 2 or command[0] != "--":
+            raise ClientError(
+                "Usage: run -- COMMAND (for example, run -- python app.py)"
+            )
+        self.terminal.heading("Application", f"Repository: {self.watch_session.repo}")
+        self.terminal.text(
+            "Running in the foreground. Ctrl+C returns here; monitoring continues.",
+            "muted",
+        )
+        result = run_existing(self.watch_session.repo, command)
+        self.terminal.text(
+            f"Application exited with code {result}. Next: status, runs, or open."
+        )
 
     def close_watch(self):
         if not self.watch_session:
@@ -473,10 +822,14 @@ class Repl(cmd.Cmd):
             return
         self.close_watch()
         self.write("Watch stopped; recorded telemetry is preserved.")
+        self.terminal.text(
+            "Next: watch to resume this repository, or exit to finish.", "muted"
+        )
 
     def do_exit(self, arg):
-        """exit: close the client; server data and background work are preserved."""
+        """exit: close the REPL and its watch services; persisted telemetry is preserved."""
         self.close_watch()
+        self.terminal.text("Session closed. Recorded telemetry is preserved.", "muted")
         return True
 
     do_quit = do_exit

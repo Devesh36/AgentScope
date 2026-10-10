@@ -84,3 +84,15 @@ def test_repl_demo_requires_separate_policy_approval_and_execution(client, monke
         )
         == 1
     )
+    output.seek(0)
+    output.truncate(0)
+    for command in ("/status", "agents", "runs", "incidents"):
+        shell.onecmd(command)
+    assert "Error:" not in output.getvalue()
+    # Readable exploration and raw JSON use the same authenticated API records.
+    output.seek(0)
+    output.truncate(0)
+    shell.onecmd("status --json")
+    summary = json.loads(output.getvalue())
+    assert summary["project_id"] == api.project
+    assert summary["metrics"]["total_runs"] > 0

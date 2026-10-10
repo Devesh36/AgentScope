@@ -17,6 +17,50 @@ For a watcher independent of your application, run `agentscope watch`, then `age
 
 See [the watch guide](watch.md) for exact provider coverage, streams, storage, shutdown, and grounding evaluation support.
 
+## Interactive workspace
+
+The REPL opens with an amber welcome screen, your current directory, and the
+configured API target. It checks connectivity when you request server data.
+The prompt shows the selected project and whether this REPL owns a watch session.
+
+```text
+guide                   # Learn the monitoring workflow without connecting
+/help                   # Browse commands grouped by task
+help watch              # Read usage and examples for one command
+watch . --no-open        # Start local monitoring and keep the REPL interactive
+run -- python app.py     # Launch with capture; wait for exit (Ctrl+C returns here)
+status                  # Read activity, usage, and watch health
+agents                  # List registered agents
+runs                    # Inspect recent executions
+incidents               # Find incident IDs for investigate
+open                    # Open this project's dashboard
+stop                    # Stop local services and keep telemetry
+exit                    # Close the REPL
+```
+
+Comments above explain each command; enter only the text before `#`.
+For long-running apps, launch with `watch -- python app.py` or use
+`agentscope run -- COMMAND` in another terminal, keeping the REPL available.
+`run` always launches in the repository watched by this REPL, even if `use`
+selects another project for inspection.
+
+`status`, `projects`, `agents`, `runs`, and `incidents` accept `--json` for full
+API data. `status --json` returns an object containing `endpoint`, `project_id`,
+`projects`, and `metrics`; list commands preserve their API response shape.
+Readable summaries distinguish unavailable cost and unassessed grounding from zero.
+`runs` and `incidents` display the API's first page (up to 50 records).
+
+Every command also supports a leading slash, such as `/status`. Tab completes
+command names; Up/Down recall commands within the current session. `tips` aliases
+`guide`, and `commands` aliases `help`. `clear` clears the visible interactive
+terminal. Output wraps to the terminal width; pipes, `TERM=dumb`, and `NO_COLOR`
+use plain text. Blank input never repeats a command.
+
+![Captured AgentScope 0.3.1 REPL showing the welcome screen, command examples, and workflow notes.](images/repl-guide.png)
+
+*Actual interactive output from an offline local session. Terminal colors follow
+your terminal's palette; this capture uses a dark background with amber accents.*
+
 ## uv
 
 Requires [uv](https://docs.astral.sh/uv/) and Python 3.12+. uv can download a suitable
@@ -32,13 +76,13 @@ Agenscope Repl
 
 This installs `agentscope-cli` from this repository, not from PyPI. In a checkout,
 use `uv tool install .`. For a reproducible snapshot, replace the branch after `@`
-with the release tag `v0.3.0` or a full source commit. If uv reports its tool bin
+with the release tag `v0.3.1` or a full source commit. If uv reports its tool bin
 directory is missing from PATH, follow its shell setup instructions. The Python SDK is supplied to applications launched through watch/run; it is also installable separately for manual integration.
 
 ## Homebrew
 
 Requires [Homebrew](https://brew.sh/) on macOS or Linux. This custom tap uses the
-AgentScope repository, not Homebrew core. The formula uses the v0.3.0 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
+AgentScope repository, not Homebrew core. The formula uses the v0.3.1 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
 
 ```bash
 brew tap Devesh36/agentscope https://github.com/Devesh36/AgentScope.git

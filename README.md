@@ -107,6 +107,11 @@ agentscope repl --token-file /path/to/server/admin-token
 
 `watch` starts its own local workspace. `repl --url ... --token-file ...` also supports connecting to an existing server. Homebrew installation and connection options are covered in the [CLI guide](docs/cli.md).
 
+The REPL provides grouped help, an offline `guide`, project-aware prompts, and
+readable summaries with `status`, `agents`, `runs`, and `incidents`. Slash commands
+such as `/help` are supported; add `--json` to inspection commands for full API
+data. See the [interactive workspace guide](docs/cli.md#interactive-workspace).
+
 ### Explore a synthetic incident
 
 In the REPL:

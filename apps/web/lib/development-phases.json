@@ -131,12 +131,20 @@
       "summary": "Added a navigation link, dated development phases, commit links, automatic inclusion of new commits at build time, and guidance for recording future changes."
     },
     {
-      "sha": null,
+      "sha": "e39757ba44d2e3b4953fa3b9abfb74127bc6bf20",
       "date": "2026-10-10",
       "subject": "Add local watch onboarding and automatic LLM monitoring",
       "phase": "watch",
       "title": "Added project-first watch and runtime monitoring",
       "summary": "Added automatic local services, persistent project setup, background REPL monitoring, Python and Node.js LLM capture, dashboard activity metrics, and explicit grounding assessments."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-10",
+      "subject": "Polish the AgentScope REPL and add guided workflow commands",
+      "phase": "cli",
+      "title": "Made the REPL easier to navigate",
+      "summary": "Added an amber terminal layout, project-aware prompts, grouped help, readable activity and investigation summaries, slash aliases, useful workflow commands, and contextual guidance."
     }
   ]
 }

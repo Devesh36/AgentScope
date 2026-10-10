@@ -17,4 +17,11 @@ Automatic metadata capture supports Python OpenAI/Anthropic create calls and Nod
 
 The CLI also connects to existing AgentScope servers and provides synthetic incident demos with separate policy, approval, execution, and verification controls.
 
+The REPL includes amber accents, project-aware prompts, grouped `help`, and a
+practical `guide` with workflow notes. Explore with `status`, `agents`, `runs`, and
+`incidents`; add `--json` for the complete API response. Slash aliases such as
+`/help` work too. `run -- COMMAND` launches an app in the watched repository and
+waits for exit; use a second terminal for long-running apps. `clear` clears the
+visible terminal. Piped sessions and `NO_COLOR` use plain output.
+
 See [the watch guide](https://github.com/Devesh36/AgentScope/blob/main/docs/watch.md) and [CLI reference](https://github.com/Devesh36/AgentScope/blob/main/docs/cli.md).
