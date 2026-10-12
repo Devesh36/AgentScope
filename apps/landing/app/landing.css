@@ -230,3 +230,5 @@ body:has(.landing) { background: #fffcf7; color-scheme: light; }
   .landing-phase-changes>li { grid-template-columns: 1fr; gap: 8px; }
   .landing-phase-change-date { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 }
+
+.landing-guide-links { display: flex; flex-wrap: wrap; gap: 12px 24px; }

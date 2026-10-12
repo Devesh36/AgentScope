@@ -7,6 +7,6 @@ include apps/web/next-env.d.ts apps/web/next.config.ts apps/web/postcss.config.m
 recursive-include apps/web/app *.ts *.tsx *.css *.svg
 recursive-include apps/web/components *.ts *.tsx
 recursive-include apps/web/lib *.ts *.json
-recursive-include apps/web/public *.png *.svg
+recursive-include apps/web/public *.png *.svg *.pdf
 recursive-include packages/python-sdk/agentscope_sdk *.py
 recursive-include packages/cli/agentscope_cli/hooks *.py *.cjs

@@ -66,6 +66,30 @@ test("public documentation explains the workflow, serves terminal screenshots, a
   await page.getByRole("link", { name: "Docs", exact: true }).click();
   await expect(page).toHaveURL(/\/docs$/);
   await expect(page.getByRole("heading", { name: "What is AgentScope?" })).toBeVisible();
+  await page.getByRole("link", { name: "Terminal tour", exact: true }).click();
+  const tour = page.locator("#terminal-tour");
+  const steps = tour.locator("details");
+  await expect(steps).toHaveCount(10);
+  for (const step of await steps.all()) {
+    if ((await step.getAttribute("open")) === null) await step.locator("summary").click();
+    const capture = step.locator("img");
+    await capture.scrollIntoViewIfNeeded();
+    await expect(capture).toBeVisible();
+    await expect.poll(() => capture.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1740);
+    await step.locator("summary").click();
+  }
+  await steps.first().locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(steps.first()).toHaveAttribute("open", "");
+  await expect(steps.first().getByRole("link", { name: "Open full-size capture: First launch and model setup", exact: true })).toHaveAttribute("href", "/docs-assets/terminal-tour/01-setup.png");
+  const downloadReady = page.waitForEvent("download");
+  await tour.getByRole("link", { name: "Download the complete PDF tour", exact: true }).click();
+  const download = await downloadReady;
+  expect(download.suggestedFilename()).toBe("agentscope-terminal-tour.pdf");
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  expect(Buffer.concat(chunks).subarray(0, 5).toString()).toBe("%PDF-");
   await page.getByRole("link", { name: "Configure the assistant", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Configure and chat with AgentScope", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Copy Meet your AgentScope assistant", exact: true }).click();

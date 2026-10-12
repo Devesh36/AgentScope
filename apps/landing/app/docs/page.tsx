@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Activity, ArrowLeft, ArrowRight, BookOpen, GitBranch, Radar, ShieldCheck, Waypoints } from "lucide-react";
+import { TerminalTour } from "@/components/terminal-tour";
 import { DocCode } from "@/components/doc-code";
 import "../landing.css";
 import "./docs.css";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 const repository = "https://github.com/Devesh36/AgentScope";
 const sections = [
   ["overview", "What is AgentScope?"],
+  ["terminal-tour", "Terminal tour"],
   ["chat", "Configure the assistant"],
   ["watch", "Monitor your project"],
   ["quickstart", "Run locally"],
@@ -57,6 +59,12 @@ export default function DocumentationPage() {
               <div><ShieldCheck size={20} /><h3>Verify</h3><p>Practice explicit demo intervention and measure follow-up recovery.</p></div>
             </div>
             <div className="docs-note"><strong>You stay in control.</strong><p>Real-agent remediation is recommendation-only. Executable actions are limited to an isolated synthetic demo adapter, require an enabled demo policy, and keep approval separate from execution.</p></div>
+          </section>
+
+          <section id="terminal-tour" className="docs-section">
+            <span className="docs-section-number">SEE IT IN ACTION / TERMINAL TOUR</span><h2>AgentScope in the terminal</h2>
+            <p>Follow ten captured steps, from configuring your assistant to monitoring LLM activity, inspecting failures, investigating an incident, and ending the session.</p>
+            <TerminalTour />
           </section>
 
           <section id="chat" className="docs-section">

@@ -17,6 +17,20 @@ for (const change of history.commits) {
 }
 const documentation = await readFile(resolve(app, "out/docs.html"), "utf8");
 assert(documentation.includes("What is AgentScope?"), "Documentation page was not exported");
+assert(html.includes('href="/docs#terminal-tour"'), "Homepage omits the terminal tour link");
+assert(documentation.includes('id="terminal-tour"'), "Documentation omits the terminal tour");
+const captures = JSON.parse(await readFile(resolve(app, "lib/terminal-screenshots.json"), "utf8"));
+assert.equal(captures.length, 10, "Terminal tour must include all ten captured steps");
+for (const capture of captures) {
+  const source = `/docs-assets/terminal-tour/${capture.name}.png`;
+  const bytes = await readFile(resolve(app, `out${source}`));
+  assert(bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), "Terminal tour asset is not a PNG");
+  assert.equal(bytes.readUInt32BE(16), capture.width, "Screenshot width does not match its metadata");
+  assert.equal(bytes.readUInt32BE(20), capture.height, "Screenshot height does not match its metadata");
+  assert(documentation.includes(source), `Documentation omits ${capture.name}`);
+}
+const pdf = await readFile(resolve(app, "out/docs-assets/terminal-tour/agentscope-terminal-tour.pdf"));
+assert(pdf.subarray(0, 5).equals(Buffer.from("%PDF-")), "Terminal tour download is not a PDF");
 for (const screenshot of ["cli-start", "cli-demo"]) {
   const bytes = await readFile(resolve(app, `out/docs-assets/${screenshot}.png`));
   assert(bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), "Documentation screenshot is not a PNG");

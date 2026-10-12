@@ -1,0 +1,82 @@
+[
+  {
+    "name": "01-setup",
+    "title": "First launch and model setup",
+    "kind": "Setup",
+    "caption": "The first interactive launch guides you through provider, model, profile, and hidden credential setup. This session selected a local compatible model.",
+    "width": 1740,
+    "height": 2009
+  },
+  {
+    "name": "02-chat",
+    "title": "Chat with AgentScope",
+    "kind": "Local model",
+    "caption": "An actual response to “Who are you?” from the configured SmolLM2 model, followed by model status. This small local model demonstrates the connection; answers come from the model you choose.",
+    "width": 1740,
+    "height": 1188
+  },
+  {
+    "name": "03-guide",
+    "title": "Learn the monitoring workflow",
+    "kind": "Guide",
+    "caption": "The built-in guide explains configuration, launching an application, inspecting records, investigating incidents, and stopping monitoring.",
+    "width": 1740,
+    "height": 1475
+  },
+  {
+    "name": "04-watch",
+    "title": "Start monitoring and run an application",
+    "kind": "Observed activity",
+    "caption": "Watch starts the local API and dashboard. Run launches the sample application with capture enabled and records a genuine local LLM call.",
+    "width": 1740,
+    "height": 1148
+  },
+  {
+    "name": "05-activity",
+    "title": "Inspect model usage, failures, and runs",
+    "kind": "Observed activity",
+    "caption": "The sample recorded two LLM calls: one success and one deliberately missing model. Status reports 60 tokens and one failure; runs and agents show the underlying records. Unsupported claims remain Not evaluated.",
+    "width": 1740,
+    "height": 2255
+  },
+  {
+    "name": "06-models-context",
+    "title": "Manage the assistant and project context",
+    "kind": "Configuration",
+    "caption": "View available providers and saved profiles, opt into sharing project summary metrics, turn context off, and clear the conversation.",
+    "width": 1740,
+    "height": 1763
+  },
+  {
+    "name": "07-investigation",
+    "title": "Detect and investigate an incident",
+    "kind": "Synthetic demo",
+    "caption": "Synthetic tool-loop telemetry triggers real incident detection and a persisted investigation with eight evidence references. These are practice records, not a production incident.",
+    "width": 1740,
+    "height": 1803
+  },
+  {
+    "name": "08-recovery",
+    "title": "Approve, execute, and verify demo recovery",
+    "kind": "Synthetic demo",
+    "caption": "Synthetic demo only: enable demo control, approve a proposal, execute it separately, and verify recovery against recorded follow-up activity. Real-agent recommendations remain advisory.",
+    "width": 1740,
+    "height": 1763
+  },
+  {
+    "name": "09-commands",
+    "title": "Complete REPL command reference",
+    "kind": "Reference",
+    "caption": "The complete command reference covers chat, monitoring, projects, runs, incidents, investigations, demo controls, and session management.",
+    "width": 1740,
+    "height": 2049
+  },
+  {
+    "name": "10-shutdown",
+    "title": "Stop safely and keep recorded telemetry",
+    "kind": "Session",
+    "caption": "Stop ends the owned watch services; exit closes the REPL. Recorded telemetry is kept for a later session.",
+    "width": 1740,
+    "height": 533
+  }
+]

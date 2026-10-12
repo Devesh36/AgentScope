@@ -23,13 +23,15 @@ link scrolls to the labeled illustrative REPL session; the real demo runs agains
 the user's existing AgentScope server.
 
 The `/docs` route explains setup, CLI workflows, SDK integration, and troubleshooting.
-Two terminal screenshots under `public/docs-assets/` show captured local CLI output.
+The Terminal tour at `/docs#terminal-tour` includes ten expandable captures under `public/docs-assets/terminal-tour/`, full-size image links, and a downloadable PDF. Real local model activity and synthetic incident/recovery scenarios are clearly labeled. Two earlier CLI captures remain in the getting-started walkthrough.
 The web app includes the same public documentation without exposing workspace APIs.
 
 After deployment, check the homepage and `/docs` on desktop and mobile, switch the uv/Homebrew
 install tabs and copy their commands. Confirm the favicon loads and the unavailable
 dashboard/API paths return 404. A public Vercel URL has not been created by the
 local build; deployment requires your authenticated Vercel account.
+
+If changes on `main` appear only as Preview deployments while the public domain shows older content, check **Project → Settings → Git → Production Branch** and select `main`. Promote the latest tested `main` deployment to Production, or redeploy it with the Production target. A successful Preview deployment alone does not update the production domain.
 
 ## Local build
 

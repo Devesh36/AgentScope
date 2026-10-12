@@ -165,12 +165,20 @@
       "summary": "Batched ingestion and history queries, added database indexes, split dashboard pages into smaller bundles, reduced idle polling, and corrected failure health reporting. Added reproducible performance checks."
     },
     {
-      "sha": null,
+      "sha": "58ae2c3a8997b91548c9d03a85790508d56085ac",
       "date": "2026-10-10",
       "subject": "Add configured multi-provider chat to the AgentScope REPL",
       "phase": "chat",
       "title": "Added model setup and conversational REPL support",
       "summary": "Added first-run assistant setup, provider profiles, natural-language chat with conversation history, optional project summaries, and integrations for OpenAI, Codex, Claude/Anthropic, Gemini, local models, and compatible APIs."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-12",
+      "subject": "Publish the AgentScope terminal screenshot tour",
+      "phase": "documentation",
+      "title": "Published the terminal screenshot tour",
+      "summary": "Added ten expandable terminal captures, descriptive captions, full-size image links, a PDF download, and a homepage entry point. Real model activity and synthetic incident/recovery examples are clearly labeled."
     }
   ]
 }

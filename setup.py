@@ -51,6 +51,7 @@ class BuildWithRuntime(build_py):
                 ".mjs",
                 ".svg",
                 ".png",
+                ".pdf",
             }:
                 continue
             target = destination / source.relative_to(ROOT)

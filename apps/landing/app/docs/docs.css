@@ -82,3 +82,18 @@
   .docs-page .landing-nav nav { gap: 24px; }
   .docs-code-bar>span { max-width: 145px; }
 }
+
+.docs-terminal-tour .docs-tour-step { padding: 0; overflow: hidden; }
+.docs-tour-step summary { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 16px; min-height: 60px; }
+.docs-tour-step summary:hover { background: #fff7e8; }
+.docs-tour-number { font-family: "JetBrains Mono Variable", monospace; color: #a7792d; font-size: 11px; }
+.docs-tour-title { flex: 1; min-width: 120px; }
+.docs-tour-kind { color: #78694e; border: 1px solid #eadfc9; background: #fcf8ef; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; }
+.docs-tour-synthetic { color: #8c5b06; border-color: #e8cc94; background: #fff1d2; }
+.docs-tour-step .docs-terminal-shot { margin: 4px 16px 0; }
+.docs-tour-full { display: inline-flex; align-items: center; min-height: 44px; margin: 2px 16px 12px; color: #8b5500; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.docs-tour-full:focus-visible { outline: 3px solid #ac6500; outline-offset: 3px; }
+
+.docs-tour-toggle { color: #94671e; width: 18px; text-align: center; }
+.docs-tour-toggle::before { content: "+"; }
+.docs-tour-step[open] .docs-tour-toggle::before { content: "−"; }
