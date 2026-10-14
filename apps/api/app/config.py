@@ -1,9 +1,25 @@
 """Native defaults and fail-closed container configuration; never render secrets."""
 
 import os
+from functools import lru_cache
 from pathlib import Path
 
+from alembic.script import ScriptDirectory
 from sqlalchemy import URL
+
+
+@lru_cache(maxsize=1)
+def migration_heads():
+    """Read the packaged migration graph independently of the working directory."""
+    try:
+        heads = frozenset(
+            ScriptDirectory(str(Path(__file__).resolve().parents[1] / "alembic")).get_heads()
+        )
+    except Exception as exc:  # Readiness must fail closed on invalid metadata.
+        raise RuntimeError("Migration metadata unavailable") from exc
+    if not heads:
+        raise RuntimeError("Migration metadata unavailable")
+    return heads
 
 
 def secret_file(variable):

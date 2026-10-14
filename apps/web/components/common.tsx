@@ -208,8 +208,8 @@ export function Pagination({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="pagination">
-      <span>
+    <nav className="pagination" aria-label="Results pagination">
+      <span role="status" aria-live="polite">
         {total ? `${offset + 1}–${Math.min(offset + size, total)}` : "0"} of{" "}
         {total} results
       </span>
@@ -229,7 +229,7 @@ export function Pagination({
           <ChevronRight size={15} />
         </Button>
       </div>
-    </div>
+    </nav>
   );
 }
 export function Field({

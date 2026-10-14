@@ -19,6 +19,7 @@ const documentation = await readFile(resolve(app, "out/docs.html"), "utf8");
 assert(documentation.includes("What is AgentScope?"), "Documentation page was not exported");
 assert(html.includes('href="/docs#terminal-tour"'), "Homepage omits the terminal tour link");
 assert(documentation.includes('id="terminal-tour"'), "Documentation omits the terminal tour");
+assert(documentation.includes('id="development"') && documentation.includes("engineering baseline and development roadmap"), "Documentation omits development and quality guidance");
 const captures = JSON.parse(await readFile(resolve(app, "lib/terminal-screenshots.json"), "utf8"));
 assert.equal(captures.length, 10, "Terminal tour must include all ten captured steps");
 for (const capture of captures) {

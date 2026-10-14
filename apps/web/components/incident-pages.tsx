@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,7 +13,6 @@ import {
   Fingerprint,
   FlaskConical,
   ListChecks,
-  Search,
   ShieldCheck,
   ShieldAlert,
   Sparkles,
@@ -41,13 +40,9 @@ import {
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
 import { Row } from "./telemetry-pages";
+import { ExplorerActions, ExplorerSearch, useExplorerFilters } from "./explorer-filters";
 export function IncidentsPage() {
-  const [status, setStatus] = useState("active");
-  const [severity, setSeverity] = useState("all");
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("newest");
-  const [offset, setOffset] = useState(0);
-  useEffect(() => setOffset(0), [status, severity, search, sort]);
+  const { search, status, severity, sort, offset, searchKey, update, reset, setOffset } = useExplorerFilters("incidents");
   const query = useData<Paginated<Incident>>(
     `incidents?limit=20&offset=${offset}&search=${encodeURIComponent(search)}&sort=${sort}${status !== "all" ? `&status=${status}` : ""}${severity !== "all" ? `&severity=${severity}` : ""}`,
   );
@@ -61,12 +56,15 @@ export function IncidentsPage() {
         title="Incident center"
         description="Detect the unusual. Investigate with evidence. Recover with confidence."
         actions={
+          <>
+          <ExplorerActions kind="incidents" reset={reset} />
           <Button asChild>
             <Link href="/simulation">
               <FlaskConical size={15} />
               Trigger a demo incident
             </Link>
           </Button>
+          </>
         }
       />
       <div className="incident-summary">
@@ -104,19 +102,11 @@ export function IncidentsPage() {
         </div>
       </div>
       <div className="filter-row">
-        <div className="search-input">
-          <Search size={15} />
-          <input
-            aria-label="Search incidents"
-            placeholder="Search incidents or affected agents…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <ExplorerSearch key={searchKey} kind="incidents" value={search} onChange={(value) => update({ q: value }, true)} />
         <select
           aria-label="Incident status"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => update({ status: e.target.value })}
         >
           <option value="active">Active incidents</option>
           <option value="all">All statuses</option>
@@ -126,6 +116,7 @@ export function IncidentsPage() {
             "ACTION_REQUIRED",
             "VERIFYING",
             "RESOLVED",
+            "DISMISSED",
           ].map((s) => (
             <option key={s} value={s}>
               {label(s)}
@@ -135,7 +126,7 @@ export function IncidentsPage() {
         <select
           aria-label="Incident severity"
           value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
+          onChange={(e) => update({ severity: e.target.value })}
         >
           <option value="all">All severities</option>
           {["critical", "high", "medium", "low"].map((s) => (
@@ -145,11 +136,12 @@ export function IncidentsPage() {
         <select
           aria-label="Sort incidents"
           value={sort}
-          onChange={(e) => setSort(e.target.value)}
+          onChange={(e) => update({ sort: e.target.value })}
         >
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
         </select>
+        <span className="muted small" role="status" aria-live="polite">{query.isPending ? "Loading incidents…" : `${number(query.data?.total)} incidents`}</span>
       </div>
       <DataState query={query}>
         <Panel
@@ -242,11 +234,7 @@ export function IncidentsPage() {
               title="No incidents in this view"
               description="Adjust your filters or run a reproducible demo scenario to explore the incident response workflow."
               action={
-                <Button asChild>
-                  <Link href="/simulation">
-                    Open simulation lab <ArrowRight size={14} />
-                  </Link>
-                </Button>
+                offset > 0 ? <Button onClick={() => setOffset(0)}>Return to first page</Button> : <Button onClick={reset}>Reset filters</Button>
               }
             />
           )}

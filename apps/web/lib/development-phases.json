@@ -49,6 +49,11 @@
       "id": "chat",
       "title": "A conversational AgentScope workspace",
       "summary": "Configure the assistant model before chatting, ask AgentScope about its capabilities, and discuss project summary metrics through your chosen provider."
+    },
+    {
+      "id": "quality",
+      "title": "A dependable development cadence",
+      "summary": "Usability improvements and scheduled validation build a practical engineering baseline, with a prioritized roadmap for reliability, access, and production operations."
     }
   ],
   "commits": [
@@ -173,12 +178,20 @@
       "summary": "Added first-run assistant setup, provider profiles, natural-language chat with conversation history, optional project summaries, and integrations for OpenAI, Codex, Claude/Anthropic, Gemini, local models, and compatible APIs."
     },
     {
-      "sha": null,
+      "sha": "a2a3d11ef401bbebd3b48c308bd4e288c6b214da",
       "date": "2026-10-12",
       "subject": "Publish the AgentScope terminal screenshot tour",
       "phase": "documentation",
       "title": "Published the terminal screenshot tour",
       "summary": "Added ten expandable terminal captures, descriptive captions, full-size image links, a PDF download, and a homepage entry point. Real model activity and synthetic incident/recovery examples are clearly labeled."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-14",
+      "subject": "Add shareable dashboard views and scheduled quality checks",
+      "phase": "quality",
+      "title": "Added shareable views and scheduled quality checks",
+      "summary": "Run and incident filters now survive reloads and can be shared with project-aware links. Search is debounced and pagination resets safely. Daily validation, weekly heavier checks, dependency audits, and a prioritized development roadmap establish an ongoing quality cadence. Fixed published terminal-tour access on authenticated dashboards while retaining private-route protection. Container readiness now follows packaged migration heads instead of rejecting the current schema."
     }
   ]
 }

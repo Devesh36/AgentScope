@@ -1,6 +1,6 @@
 # Monitor an existing project
 
-AgentScope 0.4.1 provides a local monitoring workflow on **macOS and Linux**.
+AgentScope 0.4.2 provides a local monitoring workflow on **macOS and Linux**.
 The application runs in its own environment. AgentScope launches local services
 and captures supported runtime calls without editing the application repository.
 

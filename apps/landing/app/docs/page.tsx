@@ -24,6 +24,7 @@ const sections = [
   ["sdk", "Instrument an agent"],
   ["interfaces", "API & storage"],
   ["troubleshooting", "Troubleshooting"],
+  ["development", "Development & quality"],
 ];
 
 export default function DocumentationPage() {
@@ -200,6 +201,14 @@ with AgentScope(
             <details><summary>The dashboard is empty</summary><p>A fresh workspace has no runs. Select the correct project and instrument an agent, or explicitly run the synthetic demo. Check live/demo filters if records are hidden.</p></details>
             <details><summary>A proposal cannot execute</summary><p>Only the isolated synthetic adapter can execute actions. Enable demo control for the selected project, approve the proposal, then execute it separately. Real-agent recommendations remain advisory.</p></details>
             <details><summary>Recovery is still pending</summary><p>Wait for the 15-second observation window and inspect the persisted investigation with <code>verify</code>. Approval or a successful execution response is not a recovery measurement.</p></details>
+          </section>
+          <section id="development" className="docs-section">
+            <span className="docs-section-number">BUILDING AGENTSCOPE / QUALITY</span><h2>A dependable workspace, one release at a time</h2>
+            <p>Development prioritizes useful monitoring workflows, reliable storage and recovery, accessible controls, and privacy by default. The public Phase timeline records what each release actually delivered.</p>
+            <h3>Keep your investigation view</h3>
+            <p>In the run explorer and incident center, use <strong>Copy view link</strong> to keep the project, search, filters, and page in a bookmark or share them with someone who already has access to your workspace. Filters survive a reload. Browser Back and Forward restore dropdown and page changes; <strong>Reset filters</strong> returns the explorer to its initial view while keeping the selected project.</p>
+            <div className="docs-note"><strong>Quality checks have a schedule.</strong><p>GitHub Actions runs validation on every change and daily at 03:30 UTC (09:00 India time). Monday adds container and Homebrew checks. Tests, builds, browser acceptance, dependency advisories, and performance measurements help catch regressions. Scheduled checks do not perform autonomous coding.</p></div>
+            <p>Next priorities include saved views, accessibility review, backup and restore, stronger team access, and broader provider coverage. Enterprise identity, distributed workers, and compliance certification remain future work. Read the <a href={`${repository}/blob/main/docs/continuous-development.md`}>engineering baseline and development roadmap</a>, or inspect the <a href={`${repository}/actions/workflows/ci.yml`}>latest quality-check results</a>.</p>
           </section>
           <div className="docs-bottom"><Link href="/"><ArrowLeft size={15} /> Back to AgentScope</Link><a href={`${repository}/blob/main/README.md`}>Read the repository guide <ArrowRight size={15} /></a></div>
         </article>

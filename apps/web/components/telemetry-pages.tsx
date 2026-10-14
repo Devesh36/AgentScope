@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Bot,
@@ -36,6 +36,7 @@ import {
 } from "./common";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
+import { ExplorerActions, ExplorerSearch, useExplorerFilters } from "./explorer-filters";
 export function AgentsPage() {
   const query = useData<Agent[]>("agents");
   const [search, setSearch] = useState("");
@@ -339,10 +340,7 @@ export function AgentDetail({ id }: { id: string }) {
 }
 export function RunsPage() {
   const { hours, source } = useWorkspace();
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [offset, setOffset] = useState(0);
-  useEffect(() => setOffset(0), [search, status, hours, source]);
+  const { search, status, offset, searchKey, update, reset, setOffset } = useExplorerFilters("runs");
   const query = useData<Paginated<Run>>(
     `runs?hours=${hours}&limit=20&offset=${offset}&search=${encodeURIComponent(search)}${status !== "all" ? `&status=${status}` : ""}${source !== "all" ? `&synthetic=${source === "demo"}` : ""}`,
   );
@@ -352,21 +350,14 @@ export function RunsPage() {
         title="Run explorer"
         description="Follow every execution. Find exactly where things changed."
         filters
+        actions={<ExplorerActions kind="runs" reset={reset} />}
       />
       <div className="filter-row">
-        <div className="search-input">
-          <Search size={15} />
-          <input
-            aria-label="Search runs"
-            placeholder="Search by run, agent, or execution ID…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <ExplorerSearch key={searchKey} kind="runs" value={search} onChange={(value) => update({ q: value }, true)} />
         <select
           aria-label="Run status"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => update({ status: e.target.value })}
         >
           <option value="all">All statuses</option>
           {["running", "completed", "failed", "paused", "cancelled"].map(
@@ -375,8 +366,8 @@ export function RunsPage() {
             ),
           )}
         </select>
-        <span className="muted small">
-          {number(query.data?.total)} executions
+        <span className="muted small" role="status" aria-live="polite">
+          {query.isPending ? "Loading executions…" : `${number(query.data?.total)} executions`}
         </span>
       </div>
       <DataState query={query}>
@@ -398,12 +389,7 @@ export function RunsPage() {
               title="No runs in this view"
               description="Try a wider time range, adjust your filters, or send an execution through the telemetry API."
               action={
-                <Button asChild>
-                  <Link href="/simulation">
-                    <FlaskIcon />
-                    Open simulation lab
-                  </Link>
-                </Button>
+                offset > 0 ? <Button onClick={() => setOffset(0)}>Return to first page</Button> : <Button onClick={reset}>Reset filters</Button>
               }
             />
           )}
@@ -411,9 +397,6 @@ export function RunsPage() {
       </DataState>
     </>
   );
-}
-function FlaskIcon() {
-  return <Zap size={14} />;
 }
 export function RunTable({ runs }: { runs: Run[] }) {
   return (

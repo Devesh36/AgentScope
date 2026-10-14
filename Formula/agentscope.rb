@@ -3,8 +3,8 @@ class Agentscope < Formula
   homepage "https://github.com/Devesh36/AgentScope"
   url "https://github.com/Devesh36/AgentScope.git",
       using: :git,
-      tag: "v0.4.1"
-  version "0.4.1"
+      tag: "v0.4.2"
+  version "0.4.2"
 
   depends_on "python@3.12"
   depends_on "node@24"
@@ -33,7 +33,7 @@ class Agentscope < Formula
   end
 
   test do
-    assert_match "AgentScope 0.4.1", shell_output("#{bin}/agentscope --version")
+    assert_match "AgentScope 0.4.2", shell_output("#{bin}/agentscope --version")
     assert_match "watch", shell_output("#{bin}/agentscope --help")
     assert_path_exists libexec/"runtime/apps/api/app/main.py"
     assert_path_exists libexec/"runtime/apps/web/package-lock.json"

@@ -6,10 +6,36 @@ from pathlib import Path
 
 import pytest
 from agentscope_sdk import AgentScope
-from app.config import database_url, secret_file
+from app.config import database_url, migration_heads, secret_file
 from app.db import Audit, Investigation, Session
 from app.services import investigate, investigation_step
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
+
+
+def test_container_readiness_requires_the_packaged_migration_heads(client, monkeypatch):
+    monkeypatch.setenv("AGENTSCOPE_CONTAINER", "1")
+    with Session() as db:
+        db.execute(text("DROP TABLE IF EXISTS alembic_version"))
+        db.commit()
+    assert client.get("/health/ready").status_code == 503
+    with Session() as db:
+        db.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
+        db.execute(text("INSERT INTO alembic_version VALUES ('001')"))
+        db.commit()
+    assert client.get("/health/ready").status_code == 503
+    with Session() as db:
+        db.execute(text("DELETE FROM alembic_version"))
+        for head in migration_heads():
+            db.execute(text("INSERT INTO alembic_version VALUES (:head)"), {"head": head})
+        db.commit()
+    assert client.get("/health/ready").json()["status"] == "ready"
+    with Session() as db:
+        db.execute(text("INSERT INTO alembic_version VALUES ('unexpected-revision')"))
+        db.commit()
+    assert client.get("/health/ready").status_code == 503
+    with Session() as db:
+        db.execute(text("DROP TABLE alembic_version"))
+        db.commit()
 
 
 def test_container_configuration_never_falls_back_or_prints_secrets(

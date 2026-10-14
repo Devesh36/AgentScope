@@ -36,7 +36,7 @@ npm run accept:containers -- --api-port 18001 --web-port 13001
 Each invocation generates a fresh `agentscope-accept-<nonce>` project and private state directory. It refuses an occupied port and never accepts an existing database as a fresh first-start test. It does not silently replace real telemetry with simulation data. Success requires all of the following:
 
 1. Native API/SDK tests, Ruff, mypy, TypeScript, Vitest and an isolated native production build. The temporary web source/dependency copy is removed after its build passes; the original `.next` directory is not used for builds.
-2. Compose validation, both image builds, actionable missing-configuration exits, PostgreSQL readiness, Alembic `001`, and zero runs on first start.
+2. Compose validation, both image builds, actionable missing-configuration exits, PostgreSQL readiness, the packaged Alembic head (`002`), and zero runs on first start.
 3. Non-root users, read-only app roots, dropped capabilities, no privilege escalation, explicit memory/CPU/PID bounds, and loopback-only published ports.
 4. A database outage returns 503 from both API and dashboard health, without substituting demo runs. An offline SDK export stays within its queue bound and accounts for dropped events before reconnecting the stack.
 5. The existing SDK instruments a real calculator, nested tool and progress event over HTTP. An injected lost acknowledgement retries identical event IDs. Persisted trace, metrics, chart aggregates and dashboard-proxy data must agree; replay accepts zero additional events. No model is called, so tokens are zero and cost is unavailable.

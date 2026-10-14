@@ -1,23 +1,47 @@
 name: Validate
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # 09:00 India time. Monday includes the heavier installation checks.
+    - cron: '30 3 * * 0,2-6'
+    - cron: '30 3 * * 1'
 permissions:
   contents: read
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 jobs:
   api:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: uv venv && uv pip sync apps/api/requirements.txt && uv pip install --no-deps -e packages/python-sdk
+      - run: uv venv && uv pip sync --require-hashes apps/api/requirements.txt && uv pip install --no-deps -e packages/python-sdk
       - run: .venv/bin/ruff check apps/api packages/python-sdk packages/cli examples
       - run: uv pip install --no-deps -e . && npm run test:cli
       - run: .venv/bin/mypy apps/api/app --ignore-missing-imports --follow-untyped-imports
       - run: cd apps/api && ../../.venv/bin/pytest -q
+      - name: Record reproducible performance measurements
+        run: npm run accept:performance -- --report .local/performance-report.json
+      - name: Save performance measurements only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-measurements
+          path: .local/performance-report.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +57,7 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
   landing:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,6 +72,7 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
   local-stack-acceptance:
+    if: github.event_name != 'schedule' || github.event.schedule == '30 3 * * 1'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -82,6 +108,7 @@ jobs:
           if-no-files-found: ignore
   cli-install:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -131,7 +158,9 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
   homebrew-install:
+    if: github.event_name != 'schedule' || github.event.schedule == '30 3 * * 1'
     runs-on: macos-14
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Install and test the custom formula
@@ -141,3 +170,25 @@ jobs:
           brew install --build-from-source Devesh36/agentscope/agentscope
           brew test Devesh36/agentscope/agentscope
           printf 'help\nexit\n' | Agenscope Repl
+  dependency-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit locked dashboard dependencies
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: apps/web
+      - name: Audit locked public-site dependencies
+        if: always()
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: apps/landing
+      - name: Audit locked Python dependencies
+        if: always()
+        run: uvx --from pip-audit==2.9.0 pip-audit --requirement apps/api/requirements.txt --require-hashes --disable-pip

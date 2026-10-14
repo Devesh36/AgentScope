@@ -3,6 +3,12 @@
 Use `main` for this user's work. Do not create feature branches. Keep the public
 landing experience light and amber, and keep `apps/landing` independently buildable.
 
+For ongoing development, use `docs/continuous-development.md` as the prioritized
+backlog. Address confirmed correctness/security regressions before new features,
+deliver one complete user workflow per task, and update the engineering baseline
+with measured evidence. Scheduled Actions run quality checks; do not claim they
+perform recurring AI development. Do not create dependency-update branches.
+
 ## Record each development update
 
 Every task that changes the repository must update the public **Phase** timeline

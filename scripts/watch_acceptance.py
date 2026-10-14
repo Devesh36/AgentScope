@@ -422,6 +422,7 @@ def run(args):
                     "--",
                     "--project=workflow",
                     "tests/e2e/landing.spec.ts",
+                    "tests/e2e/explorers.spec.ts",
                     "tests/e2e/watch.spec.ts",
                 ],
                 cwd=ROOT,
@@ -433,7 +434,7 @@ def run(args):
                 timeout=180,
             )
             report["checks"].append(
-                "Production browser checks: automatic project selection, live metrics, grounding, public docs, and responsive layouts"
+                "Production browser checks: project selection, live metrics, grounding, public docs, shareable filters, history, pagination, and responsive layouts"
             )
         if args.hold_for_browser:
             report["dashboard_url"] = next(

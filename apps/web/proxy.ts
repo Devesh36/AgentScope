@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync } from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
+import captures from './lib/terminal-screenshots.json';
+const publicDocsAssets = new Set([
+  '/docs-assets/cli-start.png',
+  '/docs-assets/cli-demo.png',
+  '/docs-assets/terminal-tour/agentscope-terminal-tour.pdf',
+  ...captures.map((capture) => `/docs-assets/terminal-tour/${capture.name}.png`),
+]);
 export function proxy(request: NextRequest) {
   // Public product documentation and its screenshots do not expose workspace data.
   const pathname = request.nextUrl.pathname;
-  if (pathname === '/' || pathname === '/docs' || pathname === '/docs/' || /^\/docs-assets\/(cli-start|cli-demo)\.png$/.test(pathname)) return NextResponse.next();
+  if (pathname === '/' || pathname === '/docs' || pathname === '/docs/' || publicDocsAssets.has(pathname)) return NextResponse.next();
   let password = process.env.DASHBOARD_PASSWORD;
   if (process.env.DASHBOARD_PASSWORD_FILE) {
     try {

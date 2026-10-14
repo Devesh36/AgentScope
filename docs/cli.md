@@ -86,13 +86,13 @@ Agenscope Repl
 
 This installs `agentscope-cli` from this repository, not from PyPI. In a checkout,
 use `uv tool install .`. For a reproducible snapshot, replace the branch after `@`
-with the release tag `v0.4.1` or a full source commit. If uv reports its tool bin
+with the release tag `v0.4.2` or a full source commit. If uv reports its tool bin
 directory is missing from PATH, follow its shell setup instructions. The Python SDK is supplied to applications launched through watch/run; it is also installable separately for manual integration.
 
 ## Homebrew
 
 Requires [Homebrew](https://brew.sh/) on macOS or Linux. This custom tap uses the
-AgentScope repository, not Homebrew core. The formula uses the v0.4.1 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
+AgentScope repository, not Homebrew core. The formula uses the v0.4.2 source tag; Python 3.12, Node.js 24, and uv are installed as dependencies.
 
 ```bash
 brew tap Devesh36/agentscope https://github.com/Devesh36/AgentScope.git

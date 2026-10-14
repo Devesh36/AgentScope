@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session as DBSession
 from starlette.responses import StreamingResponse
 
-from .config import secret_file
+from .config import migration_heads, secret_file
 from .db import (
     LOCAL,
     Agent,
@@ -287,7 +287,8 @@ def ready(request: Request, db: DB):
         db.execute(text("SELECT 1 FROM projects LIMIT 1"))
         if (
             os.getenv("AGENTSCOPE_CONTAINER") == "1"
-            and db.scalar(text("SELECT version_num FROM alembic_version")) != "001"
+            and frozenset(db.scalars(text("SELECT version_num FROM alembic_version")))
+            != migration_heads()
         ):
             raise RuntimeError("Migrations not current")
         if request.app.state.worker.done():

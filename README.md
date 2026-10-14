@@ -198,6 +198,18 @@ The current release does not provide multi-user organization management, product
 
 ## Development
 
+Development follows a [prioritized roadmap and engineering baseline](docs/continuous-development.md).
+GitHub Actions validates every change and runs scheduled checks daily at 03:30 UTC
+(09:00 India time), with additional container and Homebrew checks on Monday.
+The schedule monitors quality; recurring AI implementation needs a connected task runner.
+
+The run explorer and incident center support shareable view URLs. Use **Copy view
+link** to preserve the project, search, filters, and page; opening the link still
+requires access to that workspace. Dropdowns and pagination support browser
+Back/Forward, and searches wait briefly while you type. **Reset filters** clears
+the explorer search/status/severity/sort and returns to its first page; the run
+explorer retains the selected project, telemetry source, and time range.
+
 Use the existing repository scripts:
 
 ```bash
@@ -245,6 +257,7 @@ For Vercel, use **apps/landing** as the Root Directory and **main** as the produ
 - [API reference](docs/api.md): endpoints, project authorization, normalized events, and OTLP ingestion.
 - [Container guide](docs/local-containers.md): prerequisites, startup, restart, shutdown, and trust configuration.
 - [Performance guide](docs/performance.md): measured optimizations, reproducible benchmarks, and scaling limits.
+- [Continuous development](docs/continuous-development.md): scheduled quality checks, release discipline, engineering baseline, and prioritized milestones.
 - [Local validation records](docs/container-validation.md): measured behavior and remaining limitations.
 
 For a reproducible bug report, include the source commit, runtime versions, steps to reproduce, and sanitized output. Exclude credentials, private telemetry, and `.local/` contents.

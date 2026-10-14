@@ -46,8 +46,11 @@ test("public landing page works offline, installation tabs copy commands, mobile
     expect(await anonymousStatus("/docs")).toBe(200);
     expect(await anonymousStatus("/docs-assets/cli-start.png")).toBe(200);
     expect(await anonymousStatus("/docs-assets/cli-demo.png")).toBe(200);
+    expect(await anonymousStatus("/docs-assets/terminal-tour/01-setup.png")).toBe(200);
+    expect(await anonymousStatus("/docs-assets/terminal-tour/agentscope-terminal-tour.pdf")).toBe(200);
     expect(await anonymousStatus("/docs/private")).toBe(401);
     expect(await anonymousStatus("/docs-assets/private.png")).toBe(401);
+    expect(await anonymousStatus("/docs-assets/terminal-tour/private.png")).toBe(401);
     expect(await anonymousStatus("/dashboard")).toBe(401);
     expect(await anonymousStatus("/api/v1/projects")).toBe(401);
     expect(await anonymousStatus("/settings")).toBe(401);

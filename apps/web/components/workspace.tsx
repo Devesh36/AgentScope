@@ -1,7 +1,8 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { choice, updateView } from "@/lib/explorer-filters";
 import {
   QueryClient,
   QueryClientProvider,
@@ -133,8 +134,12 @@ export function Workspace({ children }: { children: React.ReactNode }) {
 }
 function Shell({ children }: { children: React.ReactNode }) {
   const [project, setProjectState] = useState("");
-  const [hours, setHours] = useState(24);
-  const [source, setSource] = useState("all");
+  const params = useSearchParams();
+  const hours = Number(choice(params.get("hours"), ["1", "6", "24", "168"], "24"));
+  const source = choice(params.get("source"), ["all", "live", "demo"], "all");
+  const requestedProject = params.get("project");
+  const setHours = (value: number) => updateView({ project, hours: String(value), page: null });
+  const setSource = (value: string) => updateView({ project, source: value, page: null });
   const [mobile, setMobile] = useState(false);
   const [connected, setConnected] = useState(false);
   const [toast, setToast] = useState<{
@@ -150,14 +155,19 @@ function Shell({ children }: { children: React.ReactNode }) {
   });
   const projects = projectsQuery.data || [];
   useEffect(() => {
+    if (requestedProject && projects.some((p) => p.id === requestedProject) && requestedProject !== project) {
+      setProjectState(requestedProject);
+      localStorage.setItem("agentscope-project", requestedProject);
+      return;
+    }
     if (projects.length && !projects.some((p) => p.id === project)) {
       const saved = localStorage.getItem("agentscope-project");
-      const requested = new URLSearchParams(window.location.search).get("project");
+      const requested = requestedProject;
       const selected = projects.some((p) => p.id === requested) ? requested! : projects.some((p) => p.id === saved) ? saved! : projects[0].id;
       setProjectState(selected);
       localStorage.setItem("agentscope-project", selected);
     }
-  }, [projects, project]);
+  }, [projects, project, requestedProject]);
   useEffect(() => {
     if (!project) return;
     let events: EventSource | undefined;
@@ -224,6 +234,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(id);
   }, [toast]);
   const setProject = (id: string) => {
+    updateView({ project: id, page: null });
     setProjectState(id);
     localStorage.setItem("agentscope-project", id);
   };
@@ -321,7 +332,7 @@ function Shell({ children }: { children: React.ReactNode }) {
                 <strong>Developer</strong>
                 <span>Local workspace</span>
               </div>
-              <span className="version">v0.1</span>
+              <span className="version">Local</span>
             </div>
           </div>
         </aside>
