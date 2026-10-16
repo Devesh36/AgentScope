@@ -167,6 +167,27 @@ jobs:
         run: |
           brew tap-new Devesh36/agentscope
           cp Formula/agentscope.rb "$(brew --repository Devesh36/agentscope)/Formula/agentscope.rb"
+          # Test the checked-out candidate, including PRs whose release tag does not exist yet.
+          export AGENTSCOPE_CI_ARCHIVE="$RUNNER_TEMP/agentscope-ci.tar.gz"
+          git archive --format=tar.gz --output="$AGENTSCOPE_CI_ARCHIVE" HEAD
+          python3 - "$(brew --repository Devesh36/agentscope)/Formula/agentscope.rb" <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          archive = Path(os.environ["AGENTSCOPE_CI_ARCHIVE"])
+          checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+          source = r'  url "https://github\.com/Devesh36/AgentScope\.git",\n      using: :git,\n      tag: "v[0-9.]+"\n'
+          replacement = f'  url {json.dumps(archive.as_uri())}\n  sha256 "{checksum}"\n'
+          formula, count = re.subn(source, lambda _: replacement, path.read_text())
+          if count != 1:
+              raise SystemExit("Expected release source not found in formula")
+          path.write_text(formula)
+          PY
           brew install --build-from-source Devesh36/agentscope/agentscope
           brew test Devesh36/agentscope/agentscope
           printf 'help\nexit\n' | Agenscope Repl

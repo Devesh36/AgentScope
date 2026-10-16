@@ -1,6 +1,8 @@
 # Working on AgentScope
 
-Use `main` for this user's work. Do not create feature branches. Keep the public
+Use task branches and pull requests targeting `main` for this user's work. This
+supersedes the earlier main-only preference. Push tested changes and attach each
+PR to the task; do not automatically merge. Keep the public
 landing experience light and amber, and keep `apps/landing` independently buildable.
 
 For ongoing development, use `docs/continuous-development.md` as the prioritized

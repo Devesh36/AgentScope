@@ -4,8 +4,9 @@ AgentScope is being developed as a dependable self-hosted observability tool.
 The current release supports local development and evaluation. It is not yet an
 enterprise multi-user service or a certified compliance product.
 
-See the [0.4.2 validation record](continuous-validation.md) for measured checks,
-the container regressions fixed in this pass, and remaining publication limits.
+See the [monitoring-first REPL validation](repl-startup-validation.md) for the
+latest development cycle and the [0.4.2 validation record](continuous-validation.md)
+for the broader engineering baseline and container regression checks.
 
 ## Automatic quality checks
 
@@ -37,8 +38,15 @@ and reduce it when CI duration or maintenance costs warrant it.
 
 ## Development loop
 
+The requested development cadence is every **ten minutes**, with one active
+cycle at a time. Resume longer work rather than starting overlapping tasks.
+Push tested improvements and open or update PRs as they become ready; do not
+create empty or untested commits to meet the cadence. This is a runner goal,
+not an activated background schedule. The daily quality-check schedule above
+remains separate.
+
 1. Inspect `main`, current instructions, the latest Actions failures, and this
-   backlog. Preserve existing work and use `main` directly.
+   backlog. Inspect open PRs, preserve existing work, and use a task branch.
 2. Address a failing safety or correctness check before adding a feature.
    Otherwise choose one complete user workflow from the next milestone.
 3. Implement the smallest useful release, with accessible keyboard controls,
@@ -48,11 +56,12 @@ and reduce it when CI duration or maintenance costs warrant it.
    public export/history checks. Exercise API-to-browser behavior when changing
    the dashboard. Package bundled runtime changes under a new CLI version.
 5. Record measured outcomes and outstanding limits. Update the public Phase
-   timeline with the exact commit subject and UTC date. Push passing changes to
-   `main`; create no feature branches or automated dependency-update branches.
+   timeline with the exact commit subject and UTC date. Push passing changes and
+   open or update a focused PR targeting `main`. Attach it to the task. Leave
+   merging to review; avoid duplicate PRs and automated dependency-update branches.
 6. Review the result weekly, reorder the backlog from user feedback and observed
-   failures, and choose the next bounded task. Keep production promotion separate
-   until the deployment account is available and the deployment is verified.
+   failures, and choose the next bounded task. The Next.js monitoring dashboard
+   runs locally; a hosted deployment is not a prerequisite for this workflow.
 
 ## Engineering baseline
 

@@ -41,7 +41,7 @@ cd /path/to/your/project
 agentscope repl
 ```
 
-Setup guides you through AgentScope's assistant provider, model, and hidden credential entry. Your first interactive REPL opens setup automatically if needed. Inside the REPL, type `model check`, then **Who are you?** or **What does AgentScope do?** to receive an answer from your chosen model. Conversation history supports follow-up questions.
+Setup guides you through AgentScope's assistant provider, model, and hidden credential entry. The REPL opens directly at the command prompt; type `watch` to launch the local dashboard without configuring chat. Run `configure` only when you want assistant chat. Inside the REPL, type `model check`, then **Who are you?** or **What does AgentScope do?** to receive an answer from your chosen model. Conversation history supports follow-up questions.
 
 Supported options include OpenAI/Codex, Anthropic/Claude, Gemini, OpenRouter, Groq, DeepSeek, Ollama, compatible endpoints, and existing Codex/Claude CLI logins. Use `model list`, `model use PROFILE`, and `chat reset` to manage the session. The assistant model is separate from your application's models; project summaries are shared only after `context on`. See [the chat and provider guide](docs/chat.md).
 

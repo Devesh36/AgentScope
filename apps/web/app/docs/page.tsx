@@ -70,7 +70,7 @@ export default function DocumentationPage() {
 
           <section id="chat" className="docs-section">
             <span className="docs-section-number">START HERE / YOUR ASSISTANT</span><h2>Configure and chat with AgentScope</h2>
-            <p>Choose AgentScope&apos;s own assistant model before asking questions. Run <code>agentscope configure</code>, or open the REPL: its first interactive launch guides you through provider, model, and credential setup. Keys are entered in a hidden prompt or referenced through your existing secret environment.</p>
+            <p>Choose AgentScope&apos;s own assistant model before asking questions. The REPL opens directly at the command prompt. Type <code>watch</code> to launch local monitoring without a chat model or provider key. For optional assistant chat, run <code>agentscope configure</code> or type <code>configure</code> inside the REPL. Keys are entered in a hidden prompt or referenced through your existing secret environment.</p>
             <DocCode title="Meet your AgentScope assistant">{`agentscope configure
 agentscope repl
 # Inside the REPL:

@@ -172,25 +172,18 @@ class Repl(cmd.Cmd):
 
     def preloop(self):
         self.terminal.banner(__version__, str(Path.cwd()), self.client.endpoint)
+        self.terminal.text("Local monitoring: type watch to start your local dashboard.")
+        self.terminal.text(
+            "No chat model or provider key is required to launch monitoring.", "muted"
+        )
         try:
             name, profile = self.models.active()
             self.terminal.text(
                 f"Chat model: {name} · {profile['model']}. Type a question, or model check to test the connection."
             )
         except ChatError as exc:
-            self.terminal.text(str(exc), "muted")
-            if sys.stdin.isatty() and self.terminal.interactive:
-                try:
-                    wizard(
-                        self.models, self.terminal, read=input, hidden=getpass.getpass
-                    )
-                except (ChatError, EOFError, KeyboardInterrupt) as error:
-                    self.terminal.text(
-                        str(error)
-                        if isinstance(error, ChatError)
-                        else "Setup cancelled. Run configure before chatting.",
-                        "muted",
-                    )
+            # Chat setup is explicit so provider prompts never block local commands.
+            self.terminal.text(f"Optional assistant chat: {exc}", "muted")
 
     def write(self, value):
         for line in str(value).split("\n"):

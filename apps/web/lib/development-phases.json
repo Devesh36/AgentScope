@@ -186,12 +186,20 @@
       "summary": "Added ten expandable terminal captures, descriptive captions, full-size image links, a PDF download, and a homepage entry point. Real model activity and synthetic incident/recovery examples are clearly labeled."
     },
     {
-      "sha": null,
+      "sha": "69bfeb398b3122cc25cdc61d3f1eedb9ed66aaeb",
       "date": "2026-10-14",
       "subject": "Add shareable dashboard views and scheduled quality checks",
       "phase": "quality",
       "title": "Added shareable views and scheduled quality checks",
       "summary": "Run and incident filters now survive reloads and can be shared with project-aware links. Search is debounced and pagination resets safely. Daily validation, weekly heavier checks, dependency audits, and a prioritized development roadmap establish an ongoing quality cadence. Fixed published terminal-tour access on authenticated dashboards while retaining private-route protection. Container readiness now follows packaged migration heads instead of rejecting the current schema."
+    },
+    {
+      "sha": null,
+      "date": "2026-10-16",
+      "subject": "Make local monitoring the default REPL startup",
+      "phase": "watch",
+      "title": "Open the REPL directly for local monitoring",
+      "summary": "Removed automatic provider setup from REPL startup so local commands are immediately available. Assistant chat remains optional through configure. Updated onboarding guidance and labeled older setup screenshots. Development now delivers tested improvements through PRs; the ten-minute runner goal is recorded but is not an active schedule."
     }
   ]
 }

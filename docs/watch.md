@@ -1,6 +1,6 @@
 # Monitor an existing project
 
-AgentScope 0.4.2 provides a local monitoring workflow on **macOS and Linux**.
+AgentScope provides a local monitoring workflow on **macOS and Linux**.
 The application runs in its own environment. AgentScope launches local services
 and captures supported runtime calls without editing the application repository.
 
@@ -51,7 +51,7 @@ operating system without shell evaluation.
 
 ## Interactive monitoring
 
-Configure AgentScope's own chat model with `agentscope configure` before chatting. The first interactive REPL offers setup automatically. This configuration is separate from your application's LLM credentials. You can ask **Who are you?** or discuss summary metrics after `context on`; see [the chat guide](chat.md). Monitoring itself remains available without a chat provider.
+Configure AgentScope's own chat model with `agentscope configure` before chatting. The REPL opens directly at the command prompt. Type `watch` to start local monitoring; type `configure` only when you want to set up assistant chat. This configuration is separate from your application's LLM credentials. You can ask **Who are you?** or discuss summary metrics after `context on`; see [the chat guide](chat.md). Monitoring itself remains available without a chat provider.
 
 ```text
 agentscope repl
