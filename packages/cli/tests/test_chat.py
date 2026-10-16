@@ -187,7 +187,7 @@ def test_configuration_required_and_credentials_are_private(monkeypatch):
     assert "connection not tested" in output.getvalue()
 
 
-def test_interactive_first_run_wizard_and_hidden_key(monkeypatch):
+def test_explicit_configure_wizard_and_hidden_key(monkeypatch):
     output = io.StringIO()
     output.isatty = lambda: True
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
@@ -198,19 +198,59 @@ def test_interactive_first_run_wizard_and_hidden_key(monkeypatch):
         "getpass.getpass", lambda prompt: hidden.append(prompt) or "hidden-test-key"
     )
     shell = Repl(Client("http://localhost:1"), stdout=output)
-    shell.preloop()
+    shell.onecmd("configure")
     name, profile = shell.models.active()
     assert name == "work" and profile["provider"] == "anthropic"
     assert len(hidden) == 1 and "hidden-test-key" not in output.getvalue()
 
 
-def test_first_run_can_explicitly_select_monitoring_only(monkeypatch):
+@pytest.mark.parametrize("interactive", [True, False])
+def test_startup_without_chat_never_prompts_or_connects(monkeypatch, interactive):
+    output = io.StringIO()
+    output.isatty = lambda: interactive
+    monkeypatch.setattr("sys.stdin.isatty", lambda: interactive)
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Starting monitoring must not prompt for a model or connect")
+
+    monkeypatch.setattr("builtins.input", unexpected)
+    monkeypatch.setattr("getpass.getpass", unexpected)
+    shell = Repl(Client("http://localhost:1"), stdout=output)
+    monkeypatch.setattr(shell.client, "request", unexpected)
+    shell.preloop()
+    shell.onecmd("help watch")
+    assert "watch" in output.getvalue()
+    assert "No chat model or provider key is required" in output.getvalue()
+    assert "configure" in output.getvalue()
+    assert not shell.models.path.exists()
+
+
+def test_configured_startup_preserves_profile_without_model_call(monkeypatch):
+    models = configure("ollama")
+    before = models.path.read_bytes()
+    output = io.StringIO()
+    output.isatty = lambda: True
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Startup must not request input or call a model")
+
+    monkeypatch.setattr("builtins.input", unexpected)
+    monkeypatch.setattr("getpass.getpass", unexpected)
+    monkeypatch.setattr("agentscope_cli.chat.http_answer", unexpected)
+    shell = Repl(Client("http://localhost:1"), stdout=output)
+    shell.preloop()
+    assert "Chat model: ollama" in output.getvalue()
+    assert models.path.read_bytes() == before
+
+
+def test_configure_can_explicitly_select_monitoring_only(monkeypatch):
     output = io.StringIO()
     output.isatty = lambda: True
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     monkeypatch.setattr("builtins.input", lambda prompt: "0")
     shell = Repl(Client("http://localhost:1"), stdout=output)
-    shell.preloop()
+    shell.onecmd("configure")
     assert "Monitoring-only mode" in output.getvalue()
     assert not shell.models.path.exists()
 

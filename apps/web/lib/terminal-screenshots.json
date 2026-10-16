@@ -3,7 +3,7 @@
     "name": "01-setup",
     "title": "First launch and model setup",
     "kind": "Setup",
-    "caption": "The first interactive launch guides you through provider, model, profile, and hidden credential setup. This session selected a local compatible model.",
+    "caption": "An earlier release opened model setup on first launch. Current releases start at the command prompt; run configure to open this optional setup. This recorded session selected a local compatible model.",
     "width": 1740,
     "height": 2009
   },

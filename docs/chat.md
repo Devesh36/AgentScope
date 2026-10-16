@@ -12,7 +12,7 @@ cd /path/to/your/project
 agentscope repl
 ```
 
-Setup asks for the provider, model identifier, profile name, API base when applicable, and a hidden API key if the provider environment variable is absent. Your first interactive REPL also opens this setup when no active profile exists. `0` selects monitoring-only mode; chatting requires model configuration. Piped sessions do not request interactive setup.
+Setup asks for the provider, model identifier, profile name, API base when applicable, and a hidden API key if the provider environment variable is absent. The REPL opens directly at the command prompt, including on first launch. Type `watch` to start local monitoring without a chat model or provider key. Run `configure` when you want assistant chat; `0` exits that setup into monitoring-only mode. Chatting still requires model configuration. Piped sessions never request interactive setup.
 
 Inside the REPL:
 
